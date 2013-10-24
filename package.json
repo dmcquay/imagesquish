@@ -10,6 +10,8 @@
     "formidable": "1.0.14",
     "aws-sdk": "*",
     "node-uuid": "*",
-    "http-proxy": "*"
+    "http-proxy": "*",
+    "gm": "*",
+    "tmp": "*"
   }
 }
