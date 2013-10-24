@@ -70,7 +70,7 @@ exports.upload = function(req, res) {
     });
 };
 
-var proxyImageRequest = function(req, res, key) {
+var proxyImageRequest = function(req, res, key, cb) {
     var proxyReq = http.request({
         host: 's3.amazonaws.com',
         method: req.method,
@@ -79,20 +79,22 @@ var proxyImageRequest = function(req, res, key) {
     });
 
     proxyReq.on('response', function(proxyRes) {
+        var status = proxyRes.statusCode;
+        if (status != 200 && status != 304 && cb) {
+            return cb('Proxy request returned non 200 response.');
+        }
         proxyRes.on('data', function(chunk) {
             res.write(chunk, 'binary');
         });
         proxyRes.on('end', function() {
             res.end();
+            if (cb) {
+                cb();
+            }
         });
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
     });
-    req.on('data', function(chunk) {
-        proxyReq.write(chunk, 'binary');
-    });
-    req.on('end', function() {
-        proxyReq.end();
-    });
+    proxyReq.end();
 };
 
 var getImageData = function(key, cb) {
@@ -103,6 +105,33 @@ var getImageData = function(key, cb) {
     s3.getObject(params, function(err, res) {
         cb(err, res);
     });
+};
+
+var proxyManipulatedImage = function(req, res, key, manipulation) {
+    // check if the manipulated image already exists
+    // if so, return it
+    var manipulatedKey = key + '/' + manipulation;
+    proxyImageRequest(req, res, manipulatedKey, function(err) {
+        if (err) {
+            // image wasn't found so we need to generate it
+            console.log('did not find manipulated image. generating...\n');
+            doManipulation(key, manipulation, function(err) {
+                if (err) {
+                    res.writeHead(500, {'content-type': 'text-plain'});
+                    res.end('Failed to process image: ' + err);
+                } else {
+                    proxyImageRequest(req, res, manipulatedKey);
+                }
+            });
+        } else {
+            console.log('image found, did not need to generate\n');
+        }
+    });
+
+    // check if the manipulation is currently being performed
+    // if so, wait for it, then return it
+
+    // perform the manipulation
 };
 
 var doManipulation = function(key, manipulation, cb) {
@@ -125,7 +154,7 @@ var doManipulation = function(key, manipulation, cb) {
                 if (err) {
                     cb(err);
                 } else {
-                    cb(err, key + '/' + manipulation);
+                    cb(err);
                 }
             });
         });
@@ -136,9 +165,7 @@ exports.get = function (req, res) {
     var key = req.params['key'];
     var manipulation = req.params['manipulation'];
     if (manipulation) {
-        doManipulation(key, manipulation, function(err, manipulationKey) {
-            proxyImageRequest(req, res, manipulationKey);
-        });
+        proxyManipulatedImage(req, res, key, manipulation);
     } else {
         proxyImageRequest(req, res, key);
     }
