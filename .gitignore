@@ -1,3 +1,4 @@
 node_modules/*
 .idea/*
 config/aws.json
+config/buckets.json

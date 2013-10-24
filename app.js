@@ -18,9 +18,9 @@ if ('development' == app.get('env')) {
 }
 
 // routes
-app.post('/upload', image.upload);
-app.get('/img/:key', image.get);
-app.get('/img/:key/:manipulation', image.get);
+app.post('/:bucket/upload', image.upload);
+app.get('/:bucket/:imgId', image.get);
+app.get('/:bucket/:imgId/:manipulation', image.get);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
