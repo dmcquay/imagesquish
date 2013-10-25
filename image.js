@@ -6,6 +6,14 @@ var storage = require('./storage');
 
 var sem = semaphore(config.maxConcurrentManipulations || 2);
 
+var customOperations = {
+    squareCenterCrop: function(size) {
+        return this.resize(size, size, "^").
+            gravity("Center").
+            extent(size, size);
+    }
+};
+
 exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     sem.take(function(done) {
         var srcKey = keyUtil.generateKey(bucket, imgId);
@@ -15,7 +23,11 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
             var steps = config.buckets[bucket].manipulations[manipulation];
             for (var i = 0; i < steps.length; i++) {
                 step = steps[i];
-                img[step.operation].apply(img, step.params);
+                if (customOperations[step.operation]) {
+                    customOperations[step.operation].apply(img, step.params);
+                } else {
+                    img[step.operation].apply(img, step.params);
+                }
             }
 
             img.toBuffer(function(err, buffer) {
