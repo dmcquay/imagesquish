@@ -1,3 +1,4 @@
+var config = require('./config');
 var express = require('express');
 var routes = require('./routes');
 var http = require('http');
@@ -5,7 +6,7 @@ var http = require('http');
 var app = express();
 
 // global settings
-app.set('port', process.env.PORT || 3000);
+app.set('port', config.port || 3000);
 
 // middleware
 app.use(app.router);

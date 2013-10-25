@@ -1,3 +1,13 @@
+INSTALL
+
+1. Install node. Good instructions here: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint
+2. git-clone this repo or download the latest tarball. Just put it in your home directory.
+3. cd ezimg-server and run `npm install` to install all dependencies.
+4. Create config/aws.json with your AWS credentials. (TODO: provide example)
+5. Create config/config.json. (TODO: provide default or example)
+6. An easy way to run is using Forever. Just `npm install forever` and then `forever start app.js`.
+7. You might want to add node_modules/.bin to your path. Otherwise you'll have to do `node_modules/.bin/forever start app.js`.
+
 To test uploading an image on the command line:
 
 curl http://localhost:3000/default/upload --data-binary @Scan.jpeg -H "Content-Type:image/jpeg" -v
