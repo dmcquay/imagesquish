@@ -8,6 +8,14 @@ INSTALL
 6. An easy way to run is using Forever. Just `npm install forever` and then `forever start app.js`.
 7. You might want to add node_modules/.bin to your path. Otherwise you'll have to do `node_modules/.bin/forever start app.js`.
 
+Note about running on port 80. Only root can do that, but you should not run this as root. Instead, I suggest
+one of these options:
+
+1. Use iptables to redirect port 80 to another port.
+   `sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3000`
+2. Just run it on port 3000. You should be putting a CDN in front of this anyway, which will hide your weird port
+   from your users.
+
 To test uploading an image on the command line:
 
 curl http://localhost:3000/default/upload --data-binary @Scan.jpeg -H "Content-Type:image/jpeg" -v

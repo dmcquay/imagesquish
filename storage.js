@@ -39,6 +39,13 @@ exports.upload = function(params, cb) {
 exports.proxyRequest = function(req, res, key, cb) {
     sem.take(function() {
         var leftSem = false;
+
+        // S3 will attempt to use the host header as the bucket name.
+        // Don't do this. By omitting this header, S3 will grab the bucket
+        // name from the first slash-delimited component of the Request-URI
+        // path instead, which is what we want.
+        delete req.headers['host'];
+
         var proxyReq = http.request({
             host: 's3.amazonaws.com',
             method: req.method,
