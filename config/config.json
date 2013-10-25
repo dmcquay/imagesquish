@@ -16,6 +16,9 @@
                         "operation": "resize",
                         "params": [300, 300]
                     }
+                ],
+                "square-thumb": [
+
                 ]
             }
         }
