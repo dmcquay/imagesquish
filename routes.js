@@ -42,9 +42,11 @@ var uploadMultipart = function(req, res) {
     var form = new formidable.IncomingForm();
     var bucket = req.params.bucket;
     form.parse(req, function(err, fields, files) {
-        var file = files.image;
-        var fileStream = fs.createReadStream(file.path);
-        doUpload(fileStream, file.type, res, bucket);
+        for (name in files) {
+            var fileStream = fs.createReadStream(files[name].path);
+            doUpload(fileStream, files[name].type, res, bucket);
+            break; // we'll just ignore all but the first for now
+        }
     });
 };
 
