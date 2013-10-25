@@ -56,6 +56,9 @@ exports.proxyRequest = function(req, res, key, cb) {
             });
             res.writeHead(proxyRes.statusCode, proxyRes.headers);
         }
+        res.on('close', function() {
+            proxyReq.abort();
+        });
     });
     proxyReq.end();
 };
