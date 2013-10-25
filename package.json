@@ -11,6 +11,7 @@
     "node-uuid": "*",
     "gm": "*",
     "konphyg": "*",
-    "winston": "*"
+    "winston": "*",
+    "semaphore": "*"
   }
 }

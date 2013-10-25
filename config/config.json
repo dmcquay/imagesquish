@@ -1,5 +1,6 @@
 {
     "awsBucket": "com-athlete-ezimg",
+    "maxConcurrentManipulations": 2,
     "buckets": {
         "default": {
             "manipulations": {
