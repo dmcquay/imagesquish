@@ -39,6 +39,12 @@ exports.upload = function(params, cb) {
 exports.proxyRequest = function(req, res, key, cb) {
     sem.take(function() {
         var leftSem = false;
+        var leaveSem = function() {
+            if (!leftSem) {
+                leftSem = true;
+                sem.leave();
+            }
+        };
 
         // S3 will attempt to use the host header as the bucket name.
         // Don't do this. By omitting this header, S3 will grab the bucket
@@ -57,6 +63,8 @@ exports.proxyRequest = function(req, res, key, cb) {
             var status = proxyRes.statusCode;
             if (status != 200 && status != 304 && cb) {
                 cb('Proxy request returned non 200 response.');
+                proxyReq.abort();
+                leaveSem();
             } else {
                 proxyRes.on('data', function(chunk) {
                     res.write(chunk, 'binary');
@@ -66,19 +74,13 @@ exports.proxyRequest = function(req, res, key, cb) {
                     if (cb) {
                         cb();
                     }
-                    if (!leftSem) {
-                        leftSem = true;
-                        sem.leave();
-                    }
+                    leaveSem();
                 });
                 res.writeHead(proxyRes.statusCode, proxyRes.headers);
             }
             res.on('close', function() {
                 proxyReq.abort();
-                if (!leftSem) {
-                    leftSem = true;
-                    sem.leave();
-                }
+                leaveSem();
             });
         });
         proxyReq.end();

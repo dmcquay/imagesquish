@@ -2,11 +2,13 @@ INSTALL
 
 1. Install node. Good instructions here: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint
 2. git-clone this repo or download the latest tarball. Just put it in your home directory.
-3. cd ezimg-server and run `npm install` to install all dependencies.
-4. Create config/aws.json with your AWS credentials. (TODO: provide example)
-5. Create config/config.json. (TODO: provide default or example)
-6. An easy way to run is using Forever. Just `npm install forever` and then `forever start app.js`.
-7. You might want to add node_modules/.bin to your path. Otherwise you'll have to do `node_modules/.bin/forever start app.js`.
+3. Install graphicsmagick. `sudo apt-get install graphicsmagick` or whatever, depending on your OS.
+4. cd ezimg-server and run `npm install` to install all dependencies.
+5. Create config/aws.json with your AWS credentials. (TODO: provide example)
+6. Create config/config.json. (TODO: provide default or example)
+7. An easy way to run is using Forever. Just `npm install forever` and then `forever start app.js`.
+   Learn more about forever at http://blog.nodejitsu.com/keep-a-nodejs-server-up-with-forever.
+8. You might want to add node_modules/.bin to your path. Otherwise you'll have to do `node_modules/.bin/forever start app.js`.
 
 Note about running on port 80. Only root can do that, but you should not run this as root. Instead, I suggest
 one of these options:
