@@ -1,16 +1,13 @@
 var AWS = require('aws-sdk');
-var konphyg = require('konphyg')(__dirname + '/config');
-var config = konphyg('config');
+var config = require('./config').config;
 var http = require('http');
-
-var awsBucket = config.awsBucket;
 
 AWS.config.loadFromPath('./config/aws.json');
 var s3 = new AWS.S3();
 
 exports.getObject = function(key, cb) {
     var params = {
-        Bucket: awsBucket,
+        Bucket: config.awsBucket,
         Key: key
     };
     s3.getObject(params, function(err, res) {
@@ -22,7 +19,7 @@ exports.upload = function(params, cb) {
     s3.putObject({
         ACL: 'public-read',
         Body: params.data,
-        Bucket: awsBucket,
+        Bucket: config.awsBucket,
         Key: params.key,
         CacheControl: 'max-age=31536000', // 1 year
         ContentType: params.contentType
@@ -39,7 +36,7 @@ exports.proxyRequest = function(req, res, key, cb) {
     var proxyReq = http.request({
         host: 's3.amazonaws.com',
         method: req.method,
-        path: '/' + awsBucket + '/' + key,
+        path: '/' + config.awsBucket + '/' + key,
         headers: req.headers
     });
 

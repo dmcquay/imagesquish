@@ -1,11 +1,9 @@
+var config = require('./config').config;
 var keyUtil = require('./key-util');
-var konphyg = require('konphyg')(__dirname + '/config');
 var image = require('./image');
 var storage = require('./storage');
 var util = require('util');
 var uuid = require('node-uuid');
-
-var config = konphyg('config');
 
 exports.upload = function(req, res) {
     req.length = parseInt(req.get('content-length'), 10);
