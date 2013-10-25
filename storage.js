@@ -1,5 +1,5 @@
 var AWS = require('aws-sdk');
-var config = require('./config').config;
+var config = require('./config');
 var http = require('http');
 
 AWS.config.loadFromPath('./config/aws.json');

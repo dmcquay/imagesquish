@@ -1,4 +1,4 @@
-var config = require('./config').config;
+var config = require('./config');
 var gm = require('gm');
 var keyUtil = require('./key-util');
 var storage = require('./storage');
@@ -10,6 +10,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
         var img = gm(res.Body);
 
         var steps = config.buckets[bucket].manipulations[manipulation];
+
         for (var i = 0; i < steps.length; i++) {
             step = steps[i];
             img[step.operation].apply(img, step.params);

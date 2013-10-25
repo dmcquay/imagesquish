@@ -10,6 +10,7 @@
     "aws-sdk": "*",
     "node-uuid": "*",
     "gm": "*",
-    "konphyg": "*"
+    "konphyg": "*",
+    "winston": "*"
   }
 }
