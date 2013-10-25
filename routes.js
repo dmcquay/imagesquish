@@ -1,4 +1,6 @@
 var config = require('./config');
+var formidable = require('formidable');
+var fs = require('fs');
 var keyUtil = require('./key-util');
 var log = require('./log');
 var image = require('./image');
@@ -6,10 +8,7 @@ var storage = require('./storage');
 var util = require('util');
 var uuid = require('node-uuid');
 
-exports.upload = function(req, res) {
-    req.length = parseInt(req.get('content-length'), 10);
-    var bucket = req.params['bucket'];
-
+var doUpload = function(data, contentType, res, bucket) {
     if (!config.buckets[bucket]) {
         res.writeHead(404, {'content-type': 'text/plain'});
         res.end('Bucket "' + bucket + '" does not exist.\n');
@@ -18,8 +17,8 @@ exports.upload = function(req, res) {
 
     var imgId = uuid.v4();
     var uploadParams = {
-        data: req,
-        contentType: req.get('content-type'),
+        data: data,
+        contentType: contentType,
         key: keyUtil.generateKey(bucket, imgId)
     };
     storage.upload(uploadParams, function(err) {
@@ -37,6 +36,30 @@ exports.upload = function(req, res) {
         }
         res.end();
     });
+};
+
+var uploadMultipart = function(req, res) {
+    var form = new formidable.IncomingForm();
+    var bucket = req.params.bucket;
+    form.parse(req, function(err, fields, files) {
+        var file = files.image;
+        var fileStream = fs.createReadStream(file.path);
+        doUpload(fileStream, file.type, res, bucket);
+    });
+};
+
+var uploadRaw = function(req, res) {
+    req.length = parseInt(req.get('content-length'), 10);
+    var bucket = req.params.bucket;
+    doUpload(req, req.get('content-type'), res, bucket);
+};
+
+exports.upload = function(req, res) {
+    if (req.headers['content-type'].indexOf('multipart/form-data') !== -1) {
+        return uploadMultipart(req, res);
+    } else {
+        return uploadRaw(req, res);
+    }
 };
 
 var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
