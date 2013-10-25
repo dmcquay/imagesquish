@@ -14,10 +14,36 @@ var customOperations = {
     }
 };
 
+var inProcessManipulations = {};
+var startManipulation = function(key) {
+    inProcessManipulations[key] = [];
+};
+var finishManipulation = function(key, err) {
+    for (var i = 0; i < inProcessManipulations[key].length; i++) {
+        inProcessManipulations[key][i](err);
+    }
+    delete inProcessManipulations[key];
+};
+var isManipulationInProcess = function(key) {
+    return typeof(inProcessManipulations[key]) !== 'undefined';
+};
+var waitForManipulation = function(key, cb) {
+    inProcessManipulations[key].push(cb);
+};
+
 exports.doManipulation = function(bucket, imgId, manipulation, cb) {
-    sem.take(function(done) {
-        var srcKey = keyUtil.generateKey(bucket, imgId);
-        var destKey = keyUtil.generateKey(bucket, imgId, manipulation);
+    var srcKey = keyUtil.generateKey(bucket, imgId);
+    var destKey = keyUtil.generateKey(bucket, imgId, manipulation);
+
+    if (isManipulationInProcess(destKey)) {
+        waitForManipulation(destKey, function(err) {
+            cb(err, true);
+        });
+        return;
+    }
+
+    startManipulation(destKey);
+    sem.take(function() {
         storage.getObject(srcKey, function(err, res) {
             var img = gm(res.Body);
             var steps = config.buckets[bucket].manipulations[manipulation];
@@ -37,6 +63,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                     contentType: res.ContentType
                 }, function(err, s3res) {
                     cb(err);
+                    finishManipulation(destKey, err);
                     sem.leave();
                 });
             });

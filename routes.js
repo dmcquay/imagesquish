@@ -46,25 +46,26 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
     storage.proxyRequest(req, res, key, function(err) {
         if (err) {
             // image wasn't found so we need to generate it
-            image.doManipulation(bucket, imgId, manipulation, function(err) {
+            image.doManipulation(bucket, imgId, manipulation, function(err, waited) {
                 if (err) {
                     res.writeHead(500, {'content-type': 'text-plain'});
                     res.end('Failed to process image: ' + err);
                     log.logItems('error', ['get', bucket, imgId, manipulation, 'failed']);
                 } else {
                     storage.proxyRequest(req, res, key);
-                    log.logItems('info', ['get', bucket, imgId, manipulation, 'generated']);
+                    log.logItems('info', [
+                        'get',
+                        bucket,
+                        imgId,
+                        manipulation,
+                        waited ? 'cached (waited)' : 'generated'
+                    ]);
                 }
             });
         } else {
             log.logItems('info', ['get', bucket, imgId, manipulation, 'cached']);
         }
     });
-
-    // check if the manipulation is currently being performed
-    // if so, wait for it, then return it
-
-    // perform the manipulation
 };
 
 exports.get = function (req, res) {
