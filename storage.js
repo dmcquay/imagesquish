@@ -1,6 +1,10 @@
 var AWS = require('aws-sdk');
 var config = require('./config');
 var http = require('http');
+var log = require('./log');
+var semaphore = require('semaphore');
+
+var sem = semaphore(config.maxConcurrentProxyStreams || 2);
 
 AWS.config.loadFromPath('./config/aws.json');
 var s3 = new AWS.S3();
@@ -33,32 +37,43 @@ exports.upload = function(params, cb) {
 };
 
 exports.proxyRequest = function(req, res, key, cb) {
-    var proxyReq = http.request({
-        host: 's3.amazonaws.com',
-        method: req.method,
-        path: '/' + config.awsBucket + '/' + key,
-        headers: req.headers
-    });
+    sem.take(function() {
+        var leftSem = false;
+        var proxyReq = http.request({
+            host: 's3.amazonaws.com',
+            method: req.method,
+            path: '/' + config.awsBucket + '/' + key,
+            headers: req.headers
+        });
 
-    proxyReq.on('response', function(proxyRes) {
-        var status = proxyRes.statusCode;
-        if (status != 200 && status != 304 && cb) {
-            cb('Proxy request returned non 200 response.');
-        } else {
-            proxyRes.on('data', function(chunk) {
-                res.write(chunk, 'binary');
-            });
-            proxyRes.on('end', function() {
-                res.end();
-                if (cb) {
-                    cb();
+        proxyReq.on('response', function(proxyRes) {
+            var status = proxyRes.statusCode;
+            if (status != 200 && status != 304 && cb) {
+                cb('Proxy request returned non 200 response.');
+            } else {
+                proxyRes.on('data', function(chunk) {
+                    res.write(chunk, 'binary');
+                });
+                proxyRes.on('end', function() {
+                    res.end();
+                    if (cb) {
+                        cb();
+                    }
+                    if (!leftSem) {
+                        leftSem = true;
+                        sem.leave();
+                    }
+                });
+                res.writeHead(proxyRes.statusCode, proxyRes.headers);
+            }
+            res.on('close', function() {
+                proxyReq.abort();
+                if (!leftSem) {
+                    leftSem = true;
+                    sem.leave();
                 }
             });
-            res.writeHead(proxyRes.statusCode, proxyRes.headers);
-        }
-        res.on('close', function() {
-            proxyReq.abort();
         });
+        proxyReq.end();
     });
-    proxyReq.end();
 };
