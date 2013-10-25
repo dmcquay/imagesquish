@@ -1,12 +1,11 @@
 var express = require('express');
-var image = require('./routes/image');
+var routes = require('./routes');
 var http = require('http');
 
 var app = express();
 
 // global settings
 app.set('port', process.env.PORT || 3000);
-app.set('s3 bucket', 'com-athlete-ezimg');
 
 // middleware
 app.use(app.router);
@@ -18,9 +17,9 @@ if ('development' == app.get('env')) {
 }
 
 // routes
-app.post('/:bucket/upload', image.upload);
-app.get('/:bucket/:imgId', image.get);
-app.get('/:bucket/:imgId/:manipulation', image.get);
+app.post('/:bucket/upload', routes.upload);
+app.get('/:bucket/:imgId', routes.get);
+app.get('/:bucket/:imgId/:manipulation', routes.get);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

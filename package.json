@@ -7,12 +7,9 @@
   },
   "dependencies": {
     "express": "3.4.3",
-    "formidable": "1.0.14",
     "aws-sdk": "*",
     "node-uuid": "*",
-    "http-proxy": "*",
     "gm": "*",
-    "tmp": "*",
     "konphyg": "*"
   }
 }

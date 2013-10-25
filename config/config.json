@@ -1,0 +1,21 @@
+{
+    "awsBucket": "com-athlete-ezimg",
+    "buckets": {
+        "default": {
+            "manipulations": {
+                "small": [
+                    {
+                        "operation": "resize",
+                        "params": [100, 100]
+                    }
+                ],
+                "medium": [
+                    {
+                        "operation": "resize",
+                        "params": [300, 300]
+                    }
+                ]
+            }
+        }
+    }
+}
