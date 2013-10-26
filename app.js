@@ -8,9 +8,18 @@ var app = express();
 // global settings
 app.set('port', config.port || 3000);
 
+// CORS middleware
+var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+};
+
 // middleware
-app.use(app.router);
 app.use(express.logger());
+app.use(allowCrossDomain);
+app.use(app.router);
 
 // development only
 if ('development' == app.get('env')) {
