@@ -28,6 +28,9 @@ if ('development' == app.get('env')) {
 
 // routes
 app.post('/:bucket/upload', routes.upload);
+app.post('/:bucket/upload/raw', routes.uploadRaw);
+app.post('/:bucket/upload/multipart', routes.uploadMultipart);
+app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.getUnmanaged);
 app.get('/:bucket/:imgId', routes.get);
 app.get('/:bucket/:imgId/:manipulation', routes.get);
 

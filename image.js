@@ -32,19 +32,21 @@ var waitForManipulation = function(key, cb) {
 };
 
 exports.doManipulation = function(bucket, imgId, manipulation, cb) {
-    var srcKey = keyUtil.generateKey(bucket, imgId);
-    var destKey = keyUtil.generateKey(bucket, imgId, manipulation);
+    var s3SrcKey = keyUtil.generateKey(bucket, imgId);
+    var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
+    var s3SrcBucket = config.buckets[bucket].originalsS3Bucket;
+    var s3DestBucket = config.buckets[bucket].manipulationsS3Bucket;
 
-    if (isManipulationInProcess(destKey)) {
-        waitForManipulation(destKey, function(err) {
+    if (isManipulationInProcess(s3DestKey)) {
+        waitForManipulation(s3DestKey, function(err) {
             cb(err, true);
         });
         return;
     }
 
-    startManipulation(destKey);
+    startManipulation(s3DestKey);
     sem.take(function() {
-        storage.getObject(srcKey, function(err, res) {
+        storage.getObject(s3SrcBucket, s3SrcKey, function(err, res) {
             var img = gm(res.Body);
             var steps = config.buckets[bucket].manipulations[manipulation];
             for (var i = 0; i < steps.length; i++) {
@@ -57,13 +59,15 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
             }
 
             img.toBuffer(function(err, buffer) {
-                storage.upload({
+                var uploadParams = {
+                    bucket: s3DestBucket,
                     data: buffer,
-                    key: destKey,
-                    contentType: res.ContentType
-                }, function(err, s3res) {
+                    contentType: res.ContentType,
+                    key: s3DestKey
+                };
+                storage.upload(uploadParams, function(err, s3res) {
                     cb(err);
-                    finishManipulation(destKey, err);
+                    finishManipulation(s3DestKey, err);
                     sem.leave();
                 });
             });

@@ -9,9 +9,9 @@ var sem = semaphore(config.maxConcurrentProxyStreams || 2);
 AWS.config.loadFromPath('./config/aws.json');
 var s3 = new AWS.S3();
 
-exports.getObject = function(key, cb) {
+exports.getObject = function(bucket, key, cb) {
     var params = {
-        Bucket: config.awsBucket,
+        Bucket: bucket,
         Key: key
     };
     s3.getObject(params, function(err, res) {
@@ -23,7 +23,7 @@ exports.upload = function(params, cb) {
     s3.putObject({
         ACL: 'public-read',
         Body: params.data,
-        Bucket: config.awsBucket,
+        Bucket: params.bucket,
         Key: params.key,
         CacheControl: 'max-age=31536000', // 1 year
         ContentType: params.contentType
@@ -36,7 +36,7 @@ exports.upload = function(params, cb) {
     });
 };
 
-exports.proxyRequest = function(req, res, key, cb) {
+exports.proxyRequest = function(req, res, awsBucket, key, cb) {
     sem.take(function() {
         var leftSem = false;
         var leaveSem = function() {
@@ -55,26 +55,26 @@ exports.proxyRequest = function(req, res, key, cb) {
         var proxyReq = http.request({
             host: 's3.amazonaws.com',
             method: req.method,
-            path: '/' + config.awsBucket + '/' + key,
+            path: '/' + awsBucket + '/' + key,
             headers: req.headers
         });
 
         proxyReq.on('response', function(proxyRes) {
             var status = proxyRes.statusCode;
             if (status != 200 && status != 304 && cb) {
-                cb('Proxy request returned non 200 response.');
                 proxyReq.abort();
                 leaveSem();
+                cb('Proxy request returned non 200 response.');
             } else {
                 proxyRes.on('data', function(chunk) {
                     res.write(chunk, 'binary');
                 });
                 proxyRes.on('end', function() {
                     res.end();
+                    leaveSem();
                     if (cb) {
                         cb();
                     }
-                    leaveSem();
                 });
                 res.writeHead(proxyRes.statusCode, proxyRes.headers);
             }
