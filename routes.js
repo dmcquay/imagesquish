@@ -8,7 +8,7 @@ var storage = require('./storage');
 var util = require('util');
 var uuid = require('node-uuid');
 
-var doUpload = function(data, contentType, res, bucket) {
+var doUpload = function(req, res, data, contentType, bucket) {
     if (!config.buckets[bucket]) {
         res.writeHead(404, {'content-type': 'text/plain'});
         res.end('Bucket "' + bucket + '" does not exist.\n');
@@ -22,6 +22,16 @@ var doUpload = function(data, contentType, res, bucket) {
         key: keyUtil.generateKey(bucket, imgId)
     };
     storage.upload(uploadParams, function(err) {
+        var url = keyUtil.generateUrl(req, bucket, imgId);
+
+        // If file is uploaded using an iframe, the application/json content-type
+        // will cause an undesired download dialog. In those cases, application/json
+        // will not be found in the accept header.
+        var responseContentType = 'text/plain';
+        if (req.headers.accept && req.headers.accept.indexOf('application/json') !== -1) {
+            responseContentType = 'application/json';
+        }
+
         if (err) {
             res.writeHead(500, {'content-type': 'text/plain'});
             res.write("Failure. Here's the error:\n");
@@ -29,9 +39,21 @@ var doUpload = function(data, contentType, res, bucket) {
             log.logItems('info', ['post', bucket, imgId, 'failed']);
         } else {
             res.writeHead(201, {
-                'content-type': 'text/plain',
-                'Location': '/' + bucket + '/' + imgId
+                'content-type': responseContentType,
+                'Location': url
             });
+            res.write(JSON.stringify({
+                files: [
+                    {
+                        name: imgId,
+                        size: data.length,
+                        url: url,
+                        thumbnailUrl: url,
+                        deleteUrl: url,
+                        deleteType: 'DELETE'
+                    }
+                ]
+            }));
             log.logItems('info', ['post', bucket, imgId]);
         }
         res.end();
@@ -44,7 +66,7 @@ var uploadMultipart = function(req, res) {
     form.parse(req, function(err, fields, files) {
         for (name in files) {
             var fileStream = fs.createReadStream(files[name].path);
-            doUpload(fileStream, files[name].type, res, bucket);
+            doUpload(req, res, fileStream, files[name].type, bucket);
             break; // we'll just ignore all but the first for now
         }
     });
@@ -53,7 +75,7 @@ var uploadMultipart = function(req, res) {
 var uploadRaw = function(req, res) {
     req.length = parseInt(req.get('content-length'), 10);
     var bucket = req.params.bucket;
-    doUpload(req, req.get('content-type'), res, bucket);
+    doUpload(req, res, req, req.get('content-type'), bucket);
 };
 
 exports.upload = function(req, res) {
