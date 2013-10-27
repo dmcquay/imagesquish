@@ -31,6 +31,21 @@ var waitForManipulation = function(key, cb) {
     inProcessManipulations[key].push(cb);
 };
 
+var parseOTFSteps = function(manipulation) {
+    var operations = manipulation.split(':'),
+        i, steps = [], parts;
+    operations = operations.slice(1);
+    for (i=0; i<operations.length; i++) {
+        parts = operations[i].split(/[(),]/);
+        parts.pop();
+        steps.push({
+            "operation": parts.shift(),
+            "params": parts
+        })
+    }
+    return steps;
+};
+
 exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     var s3SrcKey = keyUtil.generateKey(bucket, imgId);
     var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
@@ -48,7 +63,12 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     sem.take(function() {
         storage.getObject(s3SrcBucket, s3SrcKey, function(err, res) {
             var img = gm(res.Body);
-            var steps = config.buckets[bucket].manipulations[manipulation];
+            var steps;
+            if (manipulation.indexOf('otf') === 0) {
+                steps = parseOTFSteps(manipulation);
+            } else {
+                steps = config.buckets[bucket].manipulations[manipulation];
+            }
             for (var i = 0; i < steps.length; i++) {
                 step = steps[i];
                 if (customOperations[step.operation]) {

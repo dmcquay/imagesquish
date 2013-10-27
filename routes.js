@@ -16,7 +16,7 @@ var doUpload = function(req, res, data, contentType, bucket, redirect) {
     }
 
     if (!config.buckets[bucket].allowWrite) {
-        res.writeHead(401, {'content-type': 'text/plain'});
+        res.writeHead(403, {'content-type': 'text/plain'});
         res.end('You are not permitted to perform this operation.\n');
         return;
     }
@@ -147,13 +147,18 @@ var get = exports.get = function (req, res) {
         return;
     }
 
-    if (manipulation && !config.buckets[bucket].manipulations[manipulation]) {
-        res.writeHead(404, {'content-type': 'text/plain'});
-        res.end('Manipulation "' + manipulation + '" does not exist for bucket "' + bucket + '".\n');
-        return;
-    }
-
     if (manipulation) {
+        if (manipulation.indexOf('otf') === 0) {
+            if (!config.buckets[bucket].allowOTFManipulations) {
+                res.writeHead(403, {'content-type': 'text/plain'});
+                res.end('Bucket "' + bucket + '" does not allow on-the-fly manipulations.\n');
+                return;
+            }
+        } else if (!config.buckets[bucket].manipulations[manipulation]) {
+            res.writeHead(404, {'content-type': 'text/plain'});
+            res.end('Manipulation "' + manipulation + '" does not exist for bucket "' + bucket + '".\n');
+            return;
+        }
         proxyManipulatedImage(req, res, bucket, imgId, manipulation);
     } else {
         s3Bucket = config.buckets[bucket].originalsS3Bucket;
