@@ -163,12 +163,7 @@ var get = exports.get = function (req, res) {
     } else {
         s3Bucket = config.buckets[bucket].originalsS3Bucket;
         s3Key = keyUtil.generateKey(bucket, imgId);
-        if (config.buckets[bucket].redirect) {
-            res.writeHead(301, {'location': storage.s3url(s3Bucket, s3Key)});
-            res.end();
-        } else {
-            storage.proxyRequest(req, res, s3Bucket, s3Key);
-        }
+        storage.proxyRequest(req, res, s3Bucket, s3Key);
         log.logItems('info', ['get', bucket, imgId, 'original']);
     }
 };

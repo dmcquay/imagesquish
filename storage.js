@@ -36,16 +36,6 @@ exports.upload = function(params, cb) {
     });
 };
 
-exports.s3url = function(awsBucket, key, secure) {
-    var protocol = 'http';
-    if (secure) {
-        protocol = 'https';
-    }
-    var host = 's3.amazonaws.com';
-    var path = '/' + awsBucket + '/' + key;
-    return protocol + '://' + host + path;
-};
-
 exports.proxyRequest = function(req, res, awsBucket, key, cb) {
     sem.take(function() {
         var leftSem = false;
