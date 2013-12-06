@@ -62,6 +62,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     startManipulation(s3DestKey);
     sem.take(function() {
         storage.getObject(s3SrcBucket, s3SrcKey, function(err, res) {
+            if (err) return cb(err);
             var img = gm(res.Body);
             var steps;
             if (manipulation.indexOf('otf') === 0) {

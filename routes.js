@@ -115,9 +115,15 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
             // image wasn't found so we need to generate it
             image.doManipulation(bucket, imgId, manipulation, function(err, waited) {
                 if (err) {
-                    res.writeHead(500, {'content-type': 'text-plain'});
-                    res.end('Failed to process image: ' + err);
-                    log.logItems('error', ['get', bucket, imgId, manipulation, 'failed']);
+                    if (err.name && err.name === 'NoSuchKey') {
+                        res.writeHead(404, {'content-type': 'text-plain'});
+                        res.end('Image not found');
+                        log.logItems('error', ['get', bucket, imgId, manipulation, 'not found']);
+                    } else {
+                        res.writeHead(500, {'content-type': 'text-plain'});
+                        res.end('Failed to process image: ' + err);
+                        log.logItems('error', ['get', bucket, imgId, manipulation, 'failed']);
+                    }
                 } else {
                     storage.proxyRequest(req, res, s3Bucket, s3key);
                     log.logItems('info', [
