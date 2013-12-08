@@ -60,9 +60,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     }
 
     startManipulation(s3DestKey);
-    console.log('WAITING FOR MANIUPLATION SEMAPHORE');
     sem.take(function() {
-        console.log('OBTAINED MANIUPLATION SEMAPHORE');
         storage.getObject(s3SrcBucket, s3SrcKey, function(err, res) {
             if (err) return cb(err);
             var img = gm(res.Body);
@@ -87,6 +85,12 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
             }
 
             img.toBuffer(function(err, buffer) {
+                if (err) {
+                    cb(err);
+                    finishManipulation(s3DestKey, err);
+                    sem.leave();
+                    return;
+                }
                 var uploadParams = {
                     bucket: s3DestBucket,
                     data: buffer,
