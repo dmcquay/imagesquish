@@ -37,7 +37,9 @@ exports.upload = function(params, cb) {
 };
 
 exports.proxyRequest = function(req, res, awsBucket, key, cb) {
+    console.log('WAITING FOR PROXY SEMAPHORE');
     sem.take(function() {
+        console.log('OBTAINED PROXY SEMAPHORE');
         var leftSem = false;
         var leaveSem = function() {
             if (!leftSem) {

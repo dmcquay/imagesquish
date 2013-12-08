@@ -119,6 +119,10 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
                         res.writeHead(404, {'content-type': 'text-plain'});
                         res.end('Image not found');
                         log.logItems('error', ['get', bucket, imgId, manipulation, 'not found']);
+                    } else if (err.name && err.name === 'NoSuchOperation') {
+                        res.writeHead(404, {'content-type': 'text-plain'});
+                        res.end('Invalid operation found in this manipulation');
+                        log.logItems('error', ['get', bucket, imgId, manipulation, 'invalid operation']);
                     } else {
                         res.writeHead(500, {'content-type': 'text-plain'});
                         res.end('Failed to process image: ' + err);
