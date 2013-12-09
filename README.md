@@ -69,7 +69,7 @@ ImageSquish blows all these methods out of the water.
 1. The S3 response is immediately streamed back to the user, headers and all. So it is basically a reverse proxy for S3.
    An AWS t1.micro instance can easily stream 20 images in parallel without sweating.
 1. If the image is not found on S3, the 404 response is detected and ImageSquish then generates the size and stores
-   it in S3. It then repeats steps 1 and 2.
+   it in S3. It then repeats steps 2 and 3.
 1. Because ImageSquish is just a reverse proxy for S3, cache related headers are passed on. Therefore, it works
    beautifully with a CDN of your choice and conditional gets are also supported.
 
