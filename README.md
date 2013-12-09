@@ -167,6 +167,53 @@ If `allowOTFManipulations` is true, you could also request it like this:
 `http://localhost:3000/um/test/otf:resize(100,100)/12345.jpg`
 
 
+# DJANGO INTEGRATION
+
+Athlete.com uses Django. Here's a simple way to make ImageSquish really easy to use with Django. Just use this
+field in your model definition instead of models.ImageField.
+
+    import re
+    from django.conf import settings
+    from django.db import models
+    from django.db.models.fields.files import ImageFieldFile
+    from south.modelsinspector import add_introspection_rules
+
+    class ImageSquishFieldFile(ImageFieldFile):
+        def __getattribute__(self, name):
+            match = re.match('^url_(.*)$', name)
+            if not match:
+                return object.__getattribute__(self, name)
+            else:
+                manipulation = match.group(1)
+                return object.__getattribute__(
+                    self, 'get_manipulation_url')(manipulation)
+
+        def get_manipulation_url(self, manipulation):
+            return self.field.imagesquish_url_pattern.format(
+                base_url=settings.IMAGESQUISH_BASE_URL,
+                bucket=self.field.imagesquish_bucket,
+                manipulation=manipulation,
+                img_id=str(self))
+
+
+    class ImageSquishField(models.ImageField):
+        attr_class = ImageSquishFieldFile
+        imagesquish_bucket = 'default'
+        imagesquish_url_pattern = '{base_url}/um/{bucket}/{manipulation}/{img_id}'
+
+
+    add_introspection_rules([], ["^athlete\.db\.fields\.ImageSquishField"])
+
+Then use in your model.
+
+    class UserProfile:
+        image = ImageSquishField(upload_to='profile_images')
+
+And then you can get the "small" size like this:
+
+    profile.image.url_small
+
+
 # PERFORMANCE
 
 1. Because ImageSquish is built on nodejs, it easily handles spikes in traffic. I'm not just a nodejs fanboy. It
