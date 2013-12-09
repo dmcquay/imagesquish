@@ -1,6 +1,11 @@
 # WHAT IS IMAGESQUISH?
 
-ImageSquish resizes your images on the fly. Let's say your users can upload a profile image.
+ImageSquish is a separate service resizes your images on the fly. You tell it where to find your
+original images, configure what sizes you want (e.g. small/medium/large). Then just request your
+images in various sizes. ImageSquish will fetch the originals and generate the sizes on the fly.
+Sizes are only generated once. They are stored in S3 and served from there in the future.
+
+For example, let's say your users can upload a profile image.
 You need that image in a few different sizes through the site. The user would upload the image
 and you would store it wherever you want and display the original on your site like this.
 
@@ -57,10 +62,13 @@ they all suck a little bit.
 
 ImageSquish blows all these methods out of the water.
 
-1. User doesn't wait at upload
-1. Your application scales separately from ImageSquish and is never slowed by it
-1. Images that are never viewed are never generated
-1. And of course, ImageSquish is extremely fast and resource efficient
+1. User doesn't wait at upload.
+1. Your application scales separately from ImageSquish and is never slowed by it.
+1. Images that are never viewed are never generated.
+1. ImageSquish is extremely fast and resource efficient.
+1. Open source and dead simple at ~500 lines of code. Easy to dive in if you need to add a feature.
+1. No "integration" needed with your app. It's just a URL.
+1. Use our hosted solution [imagesquish.com](http://imagesquish.com) or deploy yourself.
 
 # How does it work?
 
