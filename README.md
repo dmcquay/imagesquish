@@ -71,7 +71,7 @@ ImageSquish blows all these methods out of the water.
 1. If the image is not found on S3, the 404 response is detected and ImageSquish then generates the size and stores
    it in S3. It then repeats steps 1 and 2.
 1. Because ImageSquish is just a reverse proxy for S3, cache related headers are passed on. Therefore, it works
-   beautifully with a CDN of your choice and conditional gets are also supported. Along with
+   beautifully with a CDN of your choice and conditional gets are also supported.
 
 # INSTALL
 
@@ -166,6 +166,18 @@ would look like this:
 If `allowOTFManipulations` is true, you could also request it like this:
 
 `http://localhost:3000/um/test/otf:resize(100,100)/12345.jpg`
+
+
+# PERFORMANCE
+
+1. Because ImageSquish is built on nodejs, it easily handles spikes in traffic. I'm not just a nodejs fanboy. It
+   really does support this use case very well. Let me explain. If your server receives 1000 resize
+   requests all at once, they are simply queued up and processed as fast as possible. If your server is too small
+   to keep up with the requests, then the requests will take a while to be served, but ImageSquish will not crumble.
+   Each queued request takes very little memory and they just sit and wait very politely.
+1. Setting up a cluster of servers is very easy because the nodes don't even need to communicate. Just make as many
+   as you want and put them behind a load balancer or round robing DNS or similar.
+1. It would also be very easy to share the queue size of each node such that it could be used for AWS auto-scaling.
 
 
 # ImageSquish in the wild
