@@ -4,18 +4,18 @@ ImageSquish resizes your images on the fly. Let's say your users can upload a pr
 You need that image in a few different sizes through the site. The user would upload the image
 and you would store it wherever you want and display the original on your site like this.
 
-<img src="www.mysite.com/media/profile_images/12345.jpg">
+    <img src="www.mysite.com/media/profile_images/12345.jpg">
 
 If you wanted a 100px version of this, you would define the "small" size in imagesquish like this:
 
-"small": [{
-    'operation': 'resize',
-    'params': [100, 100]
-}]
+    "small": [{
+        'operation': 'resize',
+        'params': [100, 100]
+    }]
 
 And then you would request the image like this:
 
-<img src="images.mysite.com/um/default/small/media/profile_images/12345.jpg">
+    <img src="images.mysite.com/um/default/small/media/profile_images/12345.jpg">
 
 # WHY IMAGESQUISH?
 
@@ -121,36 +121,36 @@ to store your various image sizes in S3. Example:
 
 The second config file is config/config.json. Here's an example:
 
-{
-    "maxConcurrentManipulations": 8,   // you should set to the number of cores on your server
-    "maxConcurrentProxyStreams": 20,   // 20-40 is recommended, depending on your server's IO and network performance
-    "port": 3000,
-    "buckets": {
-        "test": {  // Everthing is grouped into buckets (not to be confused with AWS S3 buckets)
-            "originalsS3Bucket": "com-athlete-ezimg",     // Where to find your originals. this will be replaced soon by "originHost" since there is no need for your originals to reside in S3.
-            "manipulationsS3Bucket": "com-athlete-ezimg", // Where to store your sizes (called "manipulations")
-            "allowWrite": true,                           // ImageSquish supports uploads too, which you can enable/disable here.
-            "allowOTFManipulations": true,                // Instead of "small" as the size, you can say "resize(100,150)". This is convenient, but also make you vulnerable to DOS attacks. Enable here if you wish.
-            "originalKeyFormat": "{imgId}",               // (optional) Allows you to provide a prefix for where to find your originals. This helps to make ImageSquish URLs shorter.
-            "manipulationKeyFormat": "manipulations/{imgId}/{manipulation}",
-                                                          // How to form the S3 key for where image sizes (aka "manipulations") should be stored
+    {
+        "maxConcurrentManipulations": 8,   // you should set to the number of cores on your server
+        "maxConcurrentProxyStreams": 20,   // 20-40 is recommended, depending on your server's IO and network performance
+        "port": 3000,
+        "buckets": {
+            "test": {  // Everthing is grouped into buckets (not to be confused with AWS S3 buckets)
+                "originalsS3Bucket": "com-athlete-ezimg",     // Where to find your originals. this will be replaced soon by "originHost" since there is no need for your originals to reside in S3.
+                "manipulationsS3Bucket": "com-athlete-ezimg", // Where to store your sizes (called "manipulations")
+                "allowWrite": true,                           // ImageSquish supports uploads too, which you can enable/disable here.
+                "allowOTFManipulations": true,                // Instead of "small" as the size, you can say "resize(100,150)". This is convenient, but also make you vulnerable to DOS attacks. Enable here if you wish.
+                "originalKeyFormat": "{imgId}",               // (optional) Allows you to provide a prefix for where to find your originals. This helps to make ImageSquish URLs shorter.
+                "manipulationKeyFormat": "manipulations/{imgId}/{manipulation}",
+                                                              // How to form the S3 key for where image sizes (aka "manipulations") should be stored
 
-            // And here are the actual size definitions (aka "manipulations")
-            "manipulations": {
-                "small": [
-                    {
-                        // Each operation & parameters are passed directly to graphics magick.
-                        // See docs here: http://aheckmann.github.io/gm/
-                        // You can provide multiple operations per manipulation, to be executed
-                        // sequentially.
-                        "operation": "resize",
-                        "params": [100, 100]
-                    }
-                ]
+                // And here are the actual size definitions (aka "manipulations")
+                "manipulations": {
+                    "small": [
+                        {
+                            // Each operation & parameters are passed directly to graphics magick.
+                            // See docs here: http://aheckmann.github.io/gm/
+                            // You can provide multiple operations per manipulation, to be executed
+                            // sequentially.
+                            "operation": "resize",
+                            "params": [100, 100]
+                        }
+                    ]
+                }
             }
         }
     }
-}
 
 ## ImageSquish URLs
 
