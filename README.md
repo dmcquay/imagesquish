@@ -225,6 +225,14 @@ And then you can get the "small" size like this:
    as you want and put them behind a load balancer or round robing DNS or similar.
 1. It would also be very easy to share the queue size of each node such that it could be used for AWS auto-scaling.
 
+I've done some load testing and found the following.
+
+1. On an AWS t1.micro instance, it can resize about 1 image per 1-2 seconds in spikes for an original that is about 2MB.
+   And it can stream about 20 images in parallel. If you exceed this, the requests will queue up nicely so it will
+   handle spikes nicely.
+2. Check the max concurrency limits in the config example above. My recommendations there were derived from my
+   load testing.
+
 
 # ImageSquish in the wild
 
