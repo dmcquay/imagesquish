@@ -83,8 +83,6 @@ ImageSquish blows all these methods out of the water.
 
 # INSTALL
 
-Soon we'll have an npm install, so it will just be `npm install imagesquish`. Until then...
-
 1. Install node. Good instructions here: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager#ubuntu-mint
 2. git-clone this repo or download the latest tarball. Just put it in your home directory.
 3. Install graphicsmagick. `sudo apt-get install graphicsmagick` or whatever, depending on your OS.
