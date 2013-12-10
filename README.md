@@ -1,85 +1,45 @@
 # WHAT IS IMAGESQUISH?
 
-ImageSquish is a separate service resizes your images on the fly. You tell it where to find your
-original images, configure what sizes you want (e.g. small/medium/large). Then just request your
-images in various sizes. ImageSquish will fetch the originals and generate the sizes on the fly.
-Sizes are only generated once. They are stored in S3 and served from there in the future.
+ImageSquish is a standalone service that resizes your images on the fly. It is easy to setup, scales linearly, is cheap to operate because it is very efficient, requires no integration and provides the best experience possible for your users.
 
-For example, let's say your users can upload a profile image.
-You need that image in a few different sizes through the site. The user would upload the image
-and you would store it wherever you want and display the original on your site like this.
+# QUICK EXAMPLE
 
-    <img src="www.mysite.com/media/profile_images/12345.jpg">
+You have this image on your site
 
-If you wanted a 100px version of this, you would define the "small" size in imagesquish like this:
+    http://www.mysite.com/media/profile_images/12345.jpg
 
-    "small": [{
-        'operation': 'resize',
-        'params': [100, 100]
-    }]
+Configure ImageSquish to tell it the following:
 
-And then you would request the image like this:
+* Your images are found at `www.mysite.com`
+* Give it an S3 bucket to store sizes in
+* Configure your desired sizes (for example, we might configure "small" to be 100x100)
 
-    <img src="images.mysite.com/um/default/small/media/profile_images/12345.jpg">
+Assuming you are running ImageSquish on `images.mysite.com`, request the small size with this URL:
+
+    http://images.mysite.com/default/small/media/profile_images/12345.jpg
 
 # WHY IMAGESQUISH?
 
-I have dealt with user uploaded images on many websites. Scaling them isn't terribly hard to to
-but it is annoying. After doing this for a long time, ImageSquish is the absolute best way to
-handle image resizing both for the developer and for your users.
+* Users shouldn't have to wait for sizes to be generated upon upload or see placeholder images while sizes are generated.
+* Your app server shouldn't be resizing images. It is CPU and memory hungry and scales differently.
+* Image should be generated in parallel when needed, and fast.
+* When you need a new image size, you shouldn't have to make some script to reprocess all existing images.
+* Image processing should be efficient (save $) and scale linearly.
+* It should be really easy so you can worry about more important things.
 
-# Best for users
+# HOW DOES IT WORK?
 
-If you create your images on your web application, the user typically has to wait, either at
-upload time or when viewing the images. ImageSquish avoids this. There is no wait at upload time
-since images are generated on the fly when viewing instead. And since the web application does
-not generate them, it doesn't slow down loading of the web page. The browser already will load
-the page for you before images and then the images can load asynchronously as they are generated.
-Furthermore, ImageSquish is very fast, so the wait is typically sub-second. And it is VERY well cached
-for future requests (explained in more detail below).
-
-# Best for developers
-
-As a developer, you have a few different options for user-uploaded images. Here's a breakdown of why
-they all suck a little bit.
-
-1. Generate your sizes at upload time in the main application code
-    1. You have to implement code to do the resizing
-    1. The image resizing will slow down your web app
-    1. Your users have to wait extra long when uploading for the resizing to process
-    1. When you need a new size, you have to write some script to create that size for all images in batch
-1. Generate your sizes on page view (example sorl.thumbnail)
-    1. Slows down page loads tremendously, especially if multiple images need to be generated
-1. Generate sizes async, like the big boys do it
-    1. If you want to do this right, typically you would kick off some async service to process the image
-       sizes for you. This way your user doesn't have to wait and your image processing can scale separate
-       from your app, and therefore it won't slow your app down either.
-    1. But...this means setting up a separate service, having some way to show placeholder images while
-       you wait for sizes to be generated (bad user experience), and some sort of pub-sub type setup so the
-       image processing can tell your web app when the new sizes are ready. Transloadit is a great service
-       to help you get this done, but there's still a lot more to set up. More to break, etc.
-    1. And you still have to set up a way to reprocess old images when you add a new size.
-
-ImageSquish blows all these methods out of the water.
-
-1. User doesn't wait at upload.
-1. Your application scales separately from ImageSquish and is never slowed by it.
-1. Images that are never viewed are never generated.
-1. ImageSquish is extremely fast and resource efficient.
-1. Open source and dead simple at ~500 lines of code. Easy to dive in if you need to add a feature.
-1. No "integration" needed with your app. It's just a URL.
-1. Use our hosted solution [imagesquish.com](http://imagesquish.com) or deploy yourself.
-
-# How does it work?
-
-1. A image is requested of a certain size (let's say "small")
-1. ImageSquish makes a proxy request to S3 where that image should be found, if it exists
-1. The S3 response is immediately streamed back to the user, headers and all. So it is basically a reverse proxy for S3.
-   An AWS t1.micro instance can easily stream 20 images in parallel without sweating.
+1. ImageSquish is a standalone service. You simply edit the configuration file and then start the service.
+1. Image sizes are stored in S3. When you request an image in a certain size from ImageSquish, it makes a request to S3 where that image should be found and streams it back to the user. It acts very much like a reverse proxy.
 1. If the image is not found on S3, the 404 response is detected and ImageSquish then generates the size and stores
-   it in S3. It then repeats steps 2 and 3.
-1. Because ImageSquish is just a reverse proxy for S3, cache related headers are passed on. Therefore, it works
-   beautifully with a CDN of your choice and conditional gets are also supported.
+   it in S3. It then repeats step 2.
+
+# LARGE SCALE? NO PROBLEM
+
+1. Though ImageSquish is robust enough to be used without a CDN, I still highly recommend using a CDN.
+1. Scale easily by adding more servers and putting them behind a load balancer or round robin DNS. It scales linearly.
+1. You can also just use [imagesquish.com](http://imagesquish.com) if you don't want to worry about hosting ImageSquish yourself.
+1. ImageSquish has been tested at high loads. If you manage to exceed what it can handle, it will not crumble. The requests will simply queue up very efficiently with low memory consumption and wait until your server can catch up.
 
 # INSTALL
 
@@ -100,63 +60,64 @@ one of these options:
 2. Just run it on port 3000. You should be putting a CDN in front of this anyway, which will hide your weird port
    from your users.
 
-To test uploading an image on the command line:
-
-curl http://localhost:3000/default/upload --data-binary @Scan.jpeg -H "Content-Type:image/jpeg" -v
-
-For manipulation configurations, see the node gm docs:
-
-http://aheckmann.github.io/gm/docs.html#manipulation
-
-I have also provided some custom operations:
-
-squareCenterCrop(size)
 
 # IMAGESQUISH API
 
-## The config files
+## The Config Files
 
 ImageSquish needs two configuration files. The first config/aws.json and it stores your AWS credentials. This is needed
 to store your various image sizes in S3. Example:
 
-    {
-        "accessKeyId": "[MY_ACCESS_KEY_ID]",
-        "secretAccessKey": "[MY_SECRET_ACCESS_KEY]"
-    }
+```js
+{
+    "accessKeyId": "[MY_ACCESS_KEY_ID]",
+    "secretAccessKey": "[MY_SECRET_ACCESS_KEY]"
+}
+```
 
 The second config file is config/config.json. Here's a basic example:
 
+```js
+{
+    "buckets": {
+        "test": {  // Everthing is grouped into buckets (not to be confused with AWS S3 buckets)
+            "originHost": "www.mysite.com",               // Origin server for your images
+            "manipulationsS3Bucket": "com-athlete-ezimg", // Where to store your sizes (called "manipulations")
 
-    {
-        "buckets": {
-            "test": {  // Everthing is grouped into buckets (not to be confused with AWS S3 buckets)
-                "originHost": "www.mysite.com",               // Origin server for your images
-                "manipulationsS3Bucket": "com-athlete-ezimg", // Where to store your sizes (called "manipulations")
-
-                // And here are the actual size definitions (aka "manipulations")
-                "manipulations": {
-                    "small": [
-                        {
-                            // Each operation & parameters are passed directly to graphics magick.
-                            // See docs here: http://aheckmann.github.io/gm/
-                            "operation": "resize",
-                            "params": [100, 100]
-                        },
-                        {
-                            // You can provide multiple operations per manipulation, to be executed sequentially.
-                            "operation": "autoOrient"
-                        }
-                    ]
-                }
+            // And here are the actual size definitions (aka "manipulations")
+            "manipulations": {
+                "small": [
+                    {
+                        "operation": "resize",
+                        "params": [100, 100]
+                    },
+                    {
+                        // You can provide multiple operations per manipulation, to be executed sequentially.
+                        "operation": "autoOrient"
+                    }
+                ]
             }
         }
     }
+}
+```
 
-## ImageSquish URLs
+## Supported Operations
+
+Each operation and parameters are passed directly to graphics magick.
+
+See docs here: http://aheckmann.github.io/gm/
+
+Some custom operations are also provided. Feel free to fork and add to this.
+
+https://github.com/dmcquay/imagesquish/blob/master/operations.js
+
+
+## URL Structure
 
 Once you have ImageSquish server configured, all that is left is to form your URLs correctly.
 
-    http://localhost:3000/{bucket}/{manipulation}/{image_path}
+    http://{imagesquish_host}/{bucket}/{manipulation}/{image_path}
 
 In the configuration example above, let's say I have the following original image on my server.
 
@@ -169,10 +130,31 @@ size (aka "manipulation") that we defined above.
 
 Where "test" is the bucket, "small" is the manipulation and "profile_images/12345.jpg" is the image path.
 
-If `allowOTFManipulations` is true, you could also request it like this:
+If you add `"allowOTFManipulations": true` to your bucket config, you could also request it like this:
 
     http://images.mysite.com/test/otf:resize(100,100)/profile_images/12345.jpg
 
+
+# Configuration Options
+
+The important config options have already been mentioned, but here's a detailed list including some we haven't covered yet.
+
+## Global configuration options
+
+* `port` - The port ImageSquish should listen on. Defaults to 3000.
+* `maxConcurrentProxyStreams` - The maximum number of images that can be streamed from S3 or the origin server to the user. 20-40 is recommended. Defaults to 20.
+* `maxConcurrentManipulations` - The maximum number of uncached manipulations that can be executed concurrently. As you surpass the number of CPUs on your server, you'll soon start to see performance degredation. It defaults to the number of CPUs available. I recommend you use this default.
+
+## Per-bucket configuration options
+
+* `originHost` - Required. The host where your original images can be found.
+* `originPathPrefix` - Optional. Will be prefixed to all your image paths. Useful for making your ImageSquish URLs shorter. So instead of `http://images.mysite.com/default/small/profile_images/12345.jpg`, you can set `"originPathPrefix": "profile_images/"` and then your URL becomes `http://images.mysite.com/default/small/12345.jpg`.
+* `manipulationsS3Bucket` - Required. The Amazon S3 bucket where your cached images should be stored
+* `manipulationKeyFormat` - The S3 key for storing your manipulations. Defaults to `imagesquish/{bucket}/{manipulation}/{imgId}`. There should be no need to change this.
+* `manipulations` - See the config example above
+* `allowOTFManipulations` - Defeault is `false`. If this is `true`, then you don't have to pre-configure your manipulations. Instead you can just form URLs like this: `http://images.mysite.com/default/otf:resize(100)/12345.jpg`. This makes you vulnerable to DOS attacks, so if you want to be extra careful, leave this disabled.
+
+Note: there are some additional options for uploading. See "UPLOAD IMAGES" section below.
 
 # DJANGO INTEGRATION
 
@@ -201,13 +183,13 @@ class ImageSquishFieldFile(ImageFieldFile):
             base_url=settings.IMAGESQUISH_BASE_URL,
             bucket=self.field.imagesquish_bucket,
             manipulation=manipulation,
-            img_id=str(self))
+            img_path=str(self))
 
 
 class ImageSquishField(models.ImageField):
     attr_class = ImageSquishFieldFile
     imagesquish_bucket = 'default'
-    imagesquish_url_pattern = '{base_url}/um/{bucket}/{manipulation}/{img_id}'
+    imagesquish_url_pattern = '{base_url}/{bucket}/{manipulation}/{img_path}'
 
 
 add_introspection_rules([], ["^athlete\.db\.fields\.ImageSquishField"])
@@ -222,48 +204,30 @@ class UserProfile:
 
 And then you can get the "small" size like this:
 
-    profile.image.url_small
+```python
+profile.image.url_small
+```
 
-
-# PERFORMANCE
-
-1. Because ImageSquish is built on nodejs, it easily handles spikes in traffic. I'm not just a nodejs fanboy. It
-   really does support this use case very well. Let me explain. If your server receives 1000 resize
-   requests all at once, they are simply queued up and processed as fast as possible. If your server is too small
-   to keep up with the requests, then the requests will take a while to be served, but ImageSquish will not crumble.
-   Each queued request takes very little memory and they just sit and wait very politely.
-1. Setting up a cluster of servers is very easy because the nodes don't even need to communicate. Just make as many
-   as you want and put them behind a load balancer or round robing DNS or similar.
-1. It would also be very easy to share the queue size of each node such that it could be used for AWS auto-scaling.
-
-I've done some load testing and found the following.
-
-1. On an AWS t1.micro instance, it can resize about 1 image per 1-2 seconds in spikes for an original that is about 2MB.
-   And it can stream about 20 images in parallel. If you exceed this, the requests will queue up nicely so it will
-   handle spikes nicely.
-2. Check the max concurrency limits in the config example above. My recommendations there were derived from my
-   load testing.
-
-
-# ImageSquish in the wild
+# IMAGESQUISH IN THE WILD
 
 ImageSquish was developed by Dustin McQuay, developer at Athlete.com, where it is currently being used and performing
 superbly. Let us know if you're using it too!
 
 
-# Need Help?
+# NEED HELP?
 
-ImageSquish is awesome and is easy to use, but it may seem a little hard because the docs aren't great yet and the API
-could use some simplifying. I am very willing to help you get ImageSquish set up if you have questions. It should only
-take a few minutes of my time to get you going. You can get my email from my
-[github profile](https://github.com/dmcquay).
+ImageSquish is awesome and is easy to use, but if you get stuck, feel free I am willing to lend a hand. You can get my email from my [github profile](https://github.com/dmcquay).
 
 
-# ImageSquish as a hosted service
+# UPLOADING IMAGES
 
-Your image squish server(s) are unlikely to be consistently maxed out. Therefore you will have some wasted resources.
-Therefore, we should be able to reduce costs by sharing the service. In addition, you won't have to set up or monitor
-anything. If you're interested, head on over to [imagesquish.com](imagesquish.com) and request to join our private beta.
+ImageSquish supports image uploads too, though it is not widely used or supported at this point. If you want to try it out, add `"allowWrite": true` to your bucket config and then try uploading an image via the command line like this:
+
+curl http://localhost:3000/default/upload --data-binary @Scan.jpeg -H "Content-Type:image/jpeg" -v
+
+By default it stores the uploaded images to the same bucket as your cached sizes, but you can configure that with `originalsS3Bucket` in your bucket config.
+
+By default the S3 key for uploaded images is `{bucket}/originals/{imgId}` and you can configure that with `originalKeyFormat` in your bucket config.
 
 
 # LICENSE
