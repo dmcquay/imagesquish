@@ -30,6 +30,7 @@ if ('development' == app.get('env')) {
 app.post('/:bucket/upload', routes.upload);
 app.post('/:bucket/upload/raw', routes.uploadRaw);
 app.post('/:bucket/upload/multipart', routes.uploadMultipart);
+app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
 http.createServer(app).listen(app.get('port'), function(){
