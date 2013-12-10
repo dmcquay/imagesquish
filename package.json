@@ -1,18 +1,19 @@
 {
-    "name": "application-name",
+    "name": "imagesquish",
     "version": "0.0.1",
-    "private": true,
-    "scripts": {
-        "start": "node app.js"
-    },
     "dependencies": {
         "aws-sdk": "*",
         "express": "3.4.3",
+        "forever": "*",
         "formidable": "*",
         "gm": "*",
         "konphyg": "*",
         "node-uuid": "*",
         "semaphore": "*",
         "winston": "*"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dmcquay/imagesquish"
     }
 }
