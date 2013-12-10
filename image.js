@@ -41,7 +41,9 @@ var parseOTFSteps = function(manipulation) {
     operations = operations.slice(1);
     for (i=0; i<operations.length; i++) {
         parts = operations[i].split(/[(),]/);
-        parts.pop();
+        if (parts[parts.length-1] === "") {
+            parts.pop();
+        }
         steps.push({
             "operation": parts.shift(),
             "params": parts

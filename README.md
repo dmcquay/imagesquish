@@ -124,21 +124,14 @@ to store your various image sizes in S3. Example:
         "secretAccessKey": "[MY_SECRET_ACCESS_KEY]"
     }
 
-The second config file is config/config.json. Here's an example:
+The second config file is config/config.json. Here's a basic example:
+
 
     {
-        "maxConcurrentManipulations": 8,   // you should set to the number of cores on your server
-        "maxConcurrentProxyStreams": 20,   // 20-40 is recommended, depending on your server's IO and network performance
-        "port": 3000,
         "buckets": {
             "test": {  // Everthing is grouped into buckets (not to be confused with AWS S3 buckets)
-                "originalsS3Bucket": "com-athlete-ezimg",     // Where to find your originals. this will be replaced soon by "originHost" since there is no need for your originals to reside in S3.
+                "originHost": "www.mysite.com",               // Origin server for your images
                 "manipulationsS3Bucket": "com-athlete-ezimg", // Where to store your sizes (called "manipulations")
-                "allowWrite": true,                           // ImageSquish supports uploads too, which you can enable/disable here.
-                "allowOTFManipulations": true,                // Instead of "small" as the size, you can say "resize(100,150)". This is convenient, but also make you vulnerable to DOS attacks. Enable here if you wish.
-                "originalKeyFormat": "{imgId}",               // (optional) Allows you to provide a prefix for where to find your originals. This helps to make ImageSquish URLs shorter.
-                "manipulationKeyFormat": "manipulations/{imgId}/{manipulation}",
-                                                              // How to form the S3 key for where image sizes (aka "manipulations") should be stored
 
                 // And here are the actual size definitions (aka "manipulations")
                 "manipulations": {
@@ -146,10 +139,12 @@ The second config file is config/config.json. Here's an example:
                         {
                             // Each operation & parameters are passed directly to graphics magick.
                             // See docs here: http://aheckmann.github.io/gm/
-                            // You can provide multiple operations per manipulation, to be executed
-                            // sequentially.
                             "operation": "resize",
                             "params": [100, 100]
+                        },
+                        {
+                            // You can provide multiple operations per manipulation, to be executed sequentially.
+                            "operation": "autoOrient"
                         }
                     ]
                 }
@@ -161,16 +156,22 @@ The second config file is config/config.json. Here's an example:
 
 Once you have ImageSquish server configured, all that is left is to form your URLs correctly.
 
-`http://localhost:3000/um/{bucket}/{size}/{image_path}`
+    http://localhost:3000/{bucket}/{manipulation}/{image_path}
 
-In the configuration example above, if I wanted to request /profile_images/12345.jpg in size "small", the URL
-would look like this:
+In the configuration example above, let's say I have the following original image on my server.
 
-`http://localhost:3000/um/test/small/12345.jpg`
+    http://www.mysite.com/profile_images/12345.jpg
+
+And let's say I have ImageSquish running on the host images.mysite.com and I want to the `small`
+size (aka "manipulation") that we defined above.
+
+    http://images.mysite.com/test/small/profile_images/12345.jpg
+
+Where "test" is the bucket, "small" is the manipulation and "profile_images/12345.jpg" is the image path.
 
 If `allowOTFManipulations` is true, you could also request it like this:
 
-`http://localhost:3000/um/test/otf:resize(100,100)/12345.jpg`
+    http://images.mysite.com/test/otf:resize(100,100)/profile_images/12345.jpg
 
 
 # DJANGO INTEGRATION
@@ -178,42 +179,46 @@ If `allowOTFManipulations` is true, you could also request it like this:
 Athlete.com uses Django. Here's a simple way to make ImageSquish really easy to use with Django. Just use this
 field in your model definition instead of models.ImageField.
 
-    import re
-    from django.conf import settings
-    from django.db import models
-    from django.db.models.fields.files import ImageFieldFile
-    from south.modelsinspector import add_introspection_rules
+```python
+import re
+from django.conf import settings
+from django.db import models
+from django.db.models.fields.files import ImageFieldFile
+from south.modelsinspector import add_introspection_rules
 
-    class ImageSquishFieldFile(ImageFieldFile):
-        def __getattribute__(self, name):
-            match = re.match('^url_(.*)$', name)
-            if not match:
-                return object.__getattribute__(self, name)
-            else:
-                manipulation = match.group(1)
-                return object.__getattribute__(
-                    self, 'get_manipulation_url')(manipulation)
+class ImageSquishFieldFile(ImageFieldFile):
+    def __getattribute__(self, name):
+        match = re.match('^url_(.*)$', name)
+        if not match:
+            return object.__getattribute__(self, name)
+        else:
+            manipulation = match.group(1)
+            return object.__getattribute__(
+                self, 'get_manipulation_url')(manipulation)
 
-        def get_manipulation_url(self, manipulation):
-            return self.field.imagesquish_url_pattern.format(
-                base_url=settings.IMAGESQUISH_BASE_URL,
-                bucket=self.field.imagesquish_bucket,
-                manipulation=manipulation,
-                img_id=str(self))
-
-
-    class ImageSquishField(models.ImageField):
-        attr_class = ImageSquishFieldFile
-        imagesquish_bucket = 'default'
-        imagesquish_url_pattern = '{base_url}/um/{bucket}/{manipulation}/{img_id}'
+    def get_manipulation_url(self, manipulation):
+        return self.field.imagesquish_url_pattern.format(
+            base_url=settings.IMAGESQUISH_BASE_URL,
+            bucket=self.field.imagesquish_bucket,
+            manipulation=manipulation,
+            img_id=str(self))
 
 
-    add_introspection_rules([], ["^athlete\.db\.fields\.ImageSquishField"])
+class ImageSquishField(models.ImageField):
+    attr_class = ImageSquishFieldFile
+    imagesquish_bucket = 'default'
+    imagesquish_url_pattern = '{base_url}/um/{bucket}/{manipulation}/{img_id}'
+
+
+add_introspection_rules([], ["^athlete\.db\.fields\.ImageSquishField"])
+```
 
 Then use in your model.
 
-    class UserProfile:
-        image = ImageSquishField(upload_to='profile_images')
+```python
+class UserProfile:
+    image = ImageSquishField(upload_to='profile_images')
+```
 
 And then you can get the "small" size like this:
 
