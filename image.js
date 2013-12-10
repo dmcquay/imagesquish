@@ -13,6 +13,7 @@ var maxConcurrentManipulations = config.maxConcurrentManipulations;
 if (typeof(maxConcurrentManipulations) === 'undefined') {
     maxConcurrentManipulations = os.cpus().length;
 }
+console.log('Maximum concurrent manipulations: ' + maxConcurrentManipulations);
 
 var sem = semaphore(maxConcurrentManipulations);
 
