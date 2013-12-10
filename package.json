@@ -1,6 +1,6 @@
 {
     "name": "imagesquish",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "dependencies": {
         "aws-sdk": "*",
         "express": "3.4.3",
