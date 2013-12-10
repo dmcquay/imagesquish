@@ -22,7 +22,7 @@ Assuming you are running ImageSquish on `images.mysite.com`, request the small s
 
 * Users shouldn't have to wait for sizes to be generated upon upload or see placeholder images while sizes are generated.
 * Your app server shouldn't be resizing images. It is CPU and memory hungry and scales differently.
-* Image should be generated in parallel when needed, and fast.
+* Images should be generated in parallel when needed, and fast.
 * When you need a new image size, you shouldn't have to make some script to reprocess all existing images.
 * Image processing should be efficient (save $) and scale linearly.
 * It should be really easy so you can worry about more important things.
@@ -158,7 +158,7 @@ Note: there are some additional options for uploading. See "UPLOAD IMAGES" secti
 
 # DJANGO INTEGRATION
 
-Athlete.com uses Django. Here's a simple way to make ImageSquish really easy to use with Django. Just use this
+Here's a simple way to make ImageSquish really easy to use with Django. Just use this
 field in your model definition instead of models.ImageField.
 
 ```python
@@ -216,7 +216,7 @@ superbly. Let us know if you're using it too!
 
 # NEED HELP?
 
-ImageSquish is awesome and is easy to use, but if you get stuck, feel free I am willing to lend a hand. You can get my email from my [github profile](https://github.com/dmcquay).
+ImageSquish is awesome and is easy to use, but if you get stuck, just submit an issue on GitHub and add the "question" label. I'm happy to help.
 
 
 # UPLOADING IMAGES
