@@ -14,6 +14,10 @@ Configure ImageSquish to tell it the following:
 * Give it an S3 bucket to store sizes in
 * Configure your desired sizes (for example, we might configure "small" to be 100x100)
 
+Start the ImageSquish service
+
+    forever start app.js
+
 Assuming you are running ImageSquish on `images.mysite.com`, request the small size with this URL:
 
     http://images.mysite.com/default/small/media/profile_images/12345.jpg
