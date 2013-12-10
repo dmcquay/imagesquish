@@ -3,16 +3,18 @@ var gm = require('gm');
 var keyUtil = require('./key-util');
 var semaphore = require('semaphore');
 var storage = require('./storage');
+var os = require('os');
+var customOperations = require('./operations');
 
-var sem = semaphore(config.maxConcurrentManipulations || 2);
+// If maxConcurrentManipulations is not provided, default to the number of CPUs.
+// This is recommended for best performance anyway, so most users will not need
+// to override this.
+var maxConcurrentManipulations = config.maxConcurrentManipulations;
+if (typeof(maxConcurrentManipulations) === 'undefined') {
+    maxConcurrentManipulations = os.cpus().length;
+}
 
-var customOperations = {
-    squareCenterCrop: function(size) {
-        return this.resize(size, size, "^").
-            gravity("Center").
-            extent(size, size);
-    }
-};
+var sem = semaphore(maxConcurrentManipulations);
 
 var inProcessManipulations = {};
 var startManipulation = function(key) {

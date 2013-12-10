@@ -30,9 +30,7 @@ if ('development' == app.get('env')) {
 app.post('/:bucket/upload', routes.upload);
 app.post('/:bucket/upload/raw', routes.uploadRaw);
 app.post('/:bucket/upload/multipart', routes.uploadMultipart);
-app.get('/:bucket/:imgId', routes.get);
-app.get('/:bucket/:imgId/:manipulation', routes.get);
-app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.getUnmanaged);
+app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

@@ -146,9 +146,14 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
 };
 
 var get = exports.get = function (req, res) {
-    var bucket = req.params['bucket'];
-    var imgId = req.params['imgId'];
-    var manipulation = req.params['manipulation'];
+    var bucket = req.params[0],
+        manipulation = req.params[1],
+        imgId = req.params[2];
+
+    if (manipulation === 'original') {
+        manipulation = null;
+    }
+
     var s3Bucket, s3Key;
 
     if (!config.buckets[bucket]) {
@@ -179,14 +184,5 @@ var get = exports.get = function (req, res) {
 };
 
 exports.getUnmanaged = function (req, res) {
-    var manipulation = req.params[1];
-    if (manipulation === 'original') {
-        manipulation = null;
-    }
-    req.params = {
-        bucket: req.params[0],
-        imgId: req.params[2],
-        manipulation: manipulation
-    };
-    return get(req, res);
+
 };

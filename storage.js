@@ -4,7 +4,7 @@ var http = require('http');
 var log = require('./log');
 var semaphore = require('semaphore');
 
-var sem = semaphore(config.maxConcurrentProxyStreams || 2);
+var sem = semaphore(config.maxConcurrentProxyStreams || 20);
 
 AWS.config.loadFromPath('./config/aws.json');
 var s3 = new AWS.S3();
