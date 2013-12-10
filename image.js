@@ -1,5 +1,6 @@
 var config = require('./config');
 var gm = require('gm');
+var http = require('http');
 var keyUtil = require('./key-util');
 var semaphore = require('semaphore');
 var storage = require('./storage');
@@ -50,10 +51,11 @@ var parseOTFSteps = function(manipulation) {
 };
 
 exports.doManipulation = function(bucket, imgId, manipulation, cb) {
-    var s3SrcKey = keyUtil.generateKey(bucket, imgId);
     var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
-    var s3SrcBucket = config.buckets[bucket].originalsS3Bucket;
     var s3DestBucket = config.buckets[bucket].manipulationsS3Bucket;
+
+    var srcHost = config.buckets[bucket].originHost;
+    var srcPath = '/' + (config.buckets[bucket].originPathPrefix || '') + imgId;
 
     if (isManipulationInProcess(s3DestKey)) {
         waitForManipulation(s3DestKey, function(err) {
@@ -64,9 +66,17 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
 
     startManipulation(s3DestKey);
     sem.take(function() {
-        storage.getObject(s3SrcBucket, s3SrcKey, function(err, res) {
-            if (err) return cb(err);
-            var img = gm(res.Body);
+        var req = http.request({
+            host: srcHost,
+            method: 'GET',
+            path: srcPath
+        });
+
+        req.on('response', function(res){
+            if (res.statusCode != 200) {
+                return cb({name:'NoSuchKey'})
+            }
+            var img = gm(res);
             var steps;
             if (manipulation.indexOf('otf') === 0) {
                 steps = parseOTFSteps(manipulation);
@@ -97,7 +107,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                 var uploadParams = {
                     bucket: s3DestBucket,
                     data: buffer,
-                    contentType: res.ContentType,
+                    contentType: res.headers['content-type'],
                     key: s3DestKey
                 };
                 storage.upload(uploadParams, function(err, s3res) {
@@ -107,5 +117,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                 });
             });
         });
+
+        req.end();
     });
 };

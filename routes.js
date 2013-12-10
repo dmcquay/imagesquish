@@ -8,6 +8,8 @@ var storage = require('./storage');
 var util = require('util');
 var uuid = require('node-uuid');
 
+var S3_HOST = 's3.amazonaws.com';
+
 var doUpload = function(req, res, data, contentType, bucket, redirect) {
     if (!config.buckets[bucket]) {
         res.writeHead(404, {'content-type': 'text/plain'});
@@ -81,7 +83,6 @@ var doUpload = function(req, res, data, contentType, bucket, redirect) {
 var uploadMultipart = exports.uploadMultipart = function(req, res) {
     var form = new formidable.IncomingForm();
     var bucket = req.params.bucket;
-    var redirectUrl;
     form.parse(req, function(err, fields, files) {
         for (name in files) {
             var fileStream = fs.createReadStream(files[name].path);
@@ -110,7 +111,8 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
     // if so, return it
     var s3key = keyUtil.generateKey(bucket, imgId, manipulation);
     var s3Bucket = config.buckets[bucket].manipulationsS3Bucket;
-    storage.proxyRequest(req, res, s3Bucket, s3key, function(err) {
+    var manipulationPath = '/' + s3Bucket + '/' + s3key;
+    storage.proxyRequest(req, res, S3_HOST, manipulationPath, function(err) {
         if (err) {
             // image wasn't found so we need to generate it
             image.doManipulation(bucket, imgId, manipulation, function(err, waited) {
@@ -129,7 +131,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
                         log.logItems('error', ['get', bucket, imgId, manipulation, 'failed']);
                     }
                 } else {
-                    storage.proxyRequest(req, res, s3Bucket, s3key);
+                    storage.proxyRequest(req, res, S3_HOST, manipulationPath);
                     log.logItems('info', [
                         'get',
                         bucket,
@@ -154,9 +156,10 @@ var get = exports.get = function (req, res) {
         manipulation = null;
     }
 
-    var s3Bucket, s3Key;
+    var path;
+    var bucketConfig = config.buckets[bucket];
 
-    if (!config.buckets[bucket]) {
+    if (!bucketConfig) {
         res.writeHead(400, {'content-type': 'text/plain'});
         res.end('Bucket "' + bucket + '" does not exist.\n');
         return;
@@ -164,25 +167,20 @@ var get = exports.get = function (req, res) {
 
     if (manipulation) {
         if (manipulation.indexOf('otf') === 0) {
-            if (!config.buckets[bucket].allowOTFManipulations) {
+            if (!bucketConfig.allowOTFManipulations) {
                 res.writeHead(403, {'content-type': 'text/plain'});
                 res.end('Bucket "' + bucket + '" does not allow on-the-fly manipulations.\n');
                 return;
             }
-        } else if (!config.buckets[bucket].manipulations[manipulation]) {
+        } else if (!bucketConfig.manipulations[manipulation]) {
             res.writeHead(404, {'content-type': 'text/plain'});
             res.end('Manipulation "' + manipulation + '" does not exist for bucket "' + bucket + '".\n');
             return;
         }
         proxyManipulatedImage(req, res, bucket, imgId, manipulation);
     } else {
-        s3Bucket = config.buckets[bucket].originalsS3Bucket;
-        s3Key = keyUtil.generateKey(bucket, imgId);
-        storage.proxyRequest(req, res, s3Bucket, s3Key);
+        path = '/' + bucketConfig.originPathPrefix + imgId;
+        storage.proxyRequest(req, res, S3_HOST, path);
         log.logItems('info', ['get', bucket, imgId, 'original']);
     }
-};
-
-exports.getUnmanaged = function (req, res) {
-
 };

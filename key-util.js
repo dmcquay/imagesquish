@@ -1,7 +1,7 @@
 var config = require('./config');
 
-var DEFAULT_MANIPULATION_KEY_FORMAT = '{bucket}/manipulations/{imgId}/{manipulation}';
-var DEFAULT_ORIGINAL_KEY_FORMAT = '{bucekt}/originals/{imgId}';
+var DEFAULT_MANIPULATION_KEY_FORMAT = 'imagesquish/{bucket}/{manipulation}/{imgId}';
+var DEFAULT_ORIGINAL_KEY_FORMAT = '{bucket}/originals/{imgId}'; // used for upload only
 
 exports.generateKey = function(bucket, imgId, manipulation) {
     var key;

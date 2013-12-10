@@ -38,7 +38,7 @@ exports.upload = function(params, cb) {
     });
 };
 
-exports.proxyRequest = function(req, res, awsBucket, key, cb) {
+exports.proxyRequest = function(req, res, host, path, cb) {
     sem.take(function() {
         var leftSem = false;
         var leaveSem = function() {
@@ -55,9 +55,9 @@ exports.proxyRequest = function(req, res, awsBucket, key, cb) {
         delete req.headers['host'];
 
         var proxyReq = http.request({
-            host: 's3.amazonaws.com',
+            host: host,
             method: req.method,
-            path: '/' + awsBucket + '/' + key,
+            path: path,
             headers: req.headers
         });
 
