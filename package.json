@@ -10,6 +10,7 @@
         "konphyg": "*",
         "node-uuid": "*",
         "semaphore": "*",
+        "underscore": "*",
         "winston": "*"
     },
     "repository": {

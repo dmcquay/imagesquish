@@ -1,39 +1,10 @@
+var concurrency = require('./concurrency');
 var config = require('./config');
+var customOperations = require('./operations');
 var gm = require('gm');
 var http = require('http');
 var keyUtil = require('./key-util');
-var semaphore = require('semaphore');
 var storage = require('./storage');
-var os = require('os');
-var customOperations = require('./operations');
-
-// If maxConcurrentManipulations is not provided, default to the number of CPUs.
-// This is recommended for best performance anyway, so most users will not need
-// to override this.
-var maxConcurrentManipulations = config.maxConcurrentManipulations;
-if (typeof(maxConcurrentManipulations) === 'undefined') {
-    maxConcurrentManipulations = os.cpus().length;
-}
-console.log('Maximum concurrent manipulations: ' + maxConcurrentManipulations);
-
-var sem = semaphore(maxConcurrentManipulations);
-
-var inProcessManipulations = {};
-var startManipulation = function(key) {
-    inProcessManipulations[key] = [];
-};
-var finishManipulation = function(key, err) {
-    for (var i = 0; i < inProcessManipulations[key].length; i++) {
-        inProcessManipulations[key][i](err);
-    }
-    delete inProcessManipulations[key];
-};
-var isManipulationInProcess = function(key) {
-    return typeof(inProcessManipulations[key]) !== 'undefined';
-};
-var waitForManipulation = function(key, cb) {
-    inProcessManipulations[key].push(cb);
-};
 
 var parseOTFSteps = function(manipulation) {
     var operations = manipulation.split(':'),
@@ -59,15 +30,15 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     var srcHost = config.buckets[bucket].originHost;
     var srcPath = '/' + (config.buckets[bucket].originPathPrefix || '') + imgId;
 
-    if (isManipulationInProcess(s3DestKey)) {
-        waitForManipulation(s3DestKey, function(err) {
+    if (concurrency.isManipulationInProcess(s3DestKey)) {
+        concurrency.waitForManipulation(s3DestKey, function(err) {
             cb(err, true);
         });
         return;
     }
 
-    startManipulation(s3DestKey);
-    sem.take(function() {
+    concurrency.startManipulation(s3DestKey);
+    concurrency.manipulationsSemaphore.take(function() {
         var req = http.request({
             host: srcHost,
             method: 'GET',
@@ -76,7 +47,10 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
 
         req.on('response', function(res){
             if (res.statusCode != 200) {
-                return cb({name:'NoSuchKey'})
+                return cb({
+                    name: 'ImageDoesNotExistAtOrigin',
+                    url: 'http://' + srcHost + srcPath
+                })
             }
             var img = gm(res);
             var steps;
@@ -93,8 +67,8 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                     img[step.operation].apply(img, step.params);
                 } else {
                     cb({name:'NoSuchOperation'});
-                    finishManipulation(s3DestKey, err);
-                    sem.leave();
+                    concurrency.finishManipulation(s3DestKey, err);
+                    concurrency.manipulationsSemaphore.leave();
                     return;
                 }
             }
@@ -102,8 +76,8 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
             img.toBuffer(function(err, buffer) {
                 if (err) {
                     cb(err);
-                    finishManipulation(s3DestKey, err);
-                    sem.leave();
+                    concurrency.finishManipulation(s3DestKey, err);
+                    concurrency.manipulationsSemaphore.leave();
                     return;
                 }
                 var uploadParams = {
@@ -114,8 +88,8 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                 };
                 storage.upload(uploadParams, function(err, s3res) {
                     cb(err);
-                    finishManipulation(s3DestKey, err);
-                    sem.leave();
+                    concurrency.finishManipulation(s3DestKey, err);
+                    concurrency.manipulationsSemaphore.leave();
                 });
             });
         });

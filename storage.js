@@ -1,12 +1,7 @@
 var AWS = require('aws-sdk');
 var config = require('./config');
+var concurrency = require('./concurrency');
 var http = require('http');
-var log = require('./log');
-var semaphore = require('semaphore');
-
-var maxConcurrentProxyStreams = config.maxConcurrentProxyStreams || 20;
-var sem = semaphore(maxConcurrentProxyStreams);
-console.log("Maximum concurrent proxy streams: " + maxConcurrentProxyStreams);
 
 AWS.config.loadFromPath('./config/aws.json');
 var s3 = new AWS.S3();
@@ -39,12 +34,12 @@ exports.upload = function(params, cb) {
 };
 
 exports.proxyRequest = function(req, res, host, path, cb) {
-    sem.take(function() {
+    concurrency.proxyStreamsSemaphore.take(function() {
         var leftSem = false;
         var leaveSem = function() {
             if (!leftSem) {
                 leftSem = true;
-                sem.leave();
+                concurrency.proxyStreamsSemaphore.leave();
             }
         };
 

@@ -27,6 +27,7 @@ if ('development' == app.get('env')) {
 }
 
 // routes
+app.get('/status', routes.status);
 app.post('/:bucket/upload', routes.upload);
 app.post('/:bucket/upload/raw', routes.uploadRaw);
 app.post('/:bucket/upload/multipart', routes.uploadMultipart);

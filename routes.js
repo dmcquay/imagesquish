@@ -4,11 +4,17 @@ var fs = require('fs');
 var keyUtil = require('./key-util');
 var log = require('./log');
 var image = require('./image');
+var status = require('./status');
 var storage = require('./storage');
 var util = require('util');
 var uuid = require('node-uuid');
 
 var S3_HOST = 's3.amazonaws.com';
+
+exports.status = function(req, res) {
+    res.writeHead(200, {'content-type': 'application/json'});
+    res.end(JSON.stringify(status.getStatusInfo(), undefined, 2));
+};
 
 var doUpload = function(req, res, data, contentType, bucket, redirect) {
     if (!config.buckets[bucket]) {
@@ -117,9 +123,9 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
             // image wasn't found so we need to generate it
             image.doManipulation(bucket, imgId, manipulation, function(err, waited) {
                 if (err) {
-                    if (err.name && err.name === 'NoSuchKey') {
+                    if (err.name && err.name === 'ImageDoesNotExistAtOrigin') {
                         res.writeHead(404, {'content-type': 'text-plain'});
-                        res.end('Image not found');
+                        res.end('Image not found at origin. URL: ' + err.url);
                         log.logItems('error', ['get', bucket, imgId, manipulation, 'not found']);
                     } else if (err.name && err.name === 'NoSuchOperation') {
                         res.writeHead(404, {'content-type': 'text-plain'});
@@ -172,7 +178,7 @@ var get = exports.get = function (req, res) {
                 res.end('Bucket "' + bucket + '" does not allow on-the-fly manipulations.\n');
                 return;
             }
-        } else if (!bucketConfig.manipulations[manipulation]) {
+        } else if (typeof(bucketConfig.manipulations[manipulation]) === 'undefined') {
             res.writeHead(404, {'content-type': 'text/plain'});
             res.end('Manipulation "' + manipulation + '" does not exist for bucket "' + bucket + '".\n');
             return;
