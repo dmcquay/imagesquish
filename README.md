@@ -160,6 +160,39 @@ The important config options have already been mentioned, but here's a detailed 
 
 Note: there are some additional options for uploading. See "UPLOAD IMAGES" section below.
 
+# STATUS
+
+You can get some status information at /status which looks something like this. It should give you a pretty good idea of how well your instance is handling current load.
+
+```js
+{
+  "manipulations": {
+    "currentCount": 1,
+    "limit": 1,
+    "currentQueueSize": 1,
+    "averageQueueSizes": {
+      "lastMinute": 0.16666666666666666,
+      "lastHour": 0.01680672268907563,
+      "lastDay": 0.0033277870216306157
+    },
+    "activeManipulations": [
+      "imagesquish/test/otf:resize(163,121)/IMG_1296.JPG",
+      "imagesquish/test/otf:resize(152,168)/IMG_1296.JPG"
+    ]
+  },
+  "proxyStreams": {
+    "currentCount": 1,
+    "limit": 1,
+    "currentQueueSize": 217,
+    "averageQueueSizes": {
+      "lastMinute": 145.25,
+      "lastHour": 14.647058823529411,
+      "lastDay": 7.063227953410982
+    }
+  }
+}
+```
+
 # DJANGO INTEGRATION
 
 Here's a simple way to make ImageSquish really easy to use with Django. Just use this
