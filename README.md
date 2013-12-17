@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/dmcquay/imagesquish.png)](https://travis-ci.org/dmcquay/imagesquish)
+
 # WHAT IS IMAGESQUISH?
 
 ImageSquish is a standalone service that resizes your images on the fly. It is easy to setup, scales linearly, is cheap to operate because it is very efficient, requires no integration and provides the best experience possible for your users.
