@@ -2,8 +2,14 @@ var AWS = require('aws-sdk');
 var config = require('./config');
 var concurrency = require('./concurrency');
 var http = require('http');
+var log = require('./log');
 
-AWS.config.loadFromPath('./config/aws.json');
+try {
+    AWS.config.loadFromPath('./config/aws.json');
+} catch(err) {
+    log.log('warn', 'AWS config file is missing');
+}
+
 var s3 = new AWS.S3();
 
 exports.upload = function(params, cb) {

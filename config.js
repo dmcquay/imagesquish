@@ -1,5 +1,14 @@
-var konphyg = require('konphyg')(__dirname + '/config');
-var config = konphyg('config');
+var log = require('./log');
+
+var config;
+
+try {
+    var konphyg = require('konphyg')(__dirname + '/config');
+    var config = konphyg('config');
+} catch(err) {
+    log.log('warn', 'Main config file is missing');
+    config = {};
+}
 
 var bucketName;
 
