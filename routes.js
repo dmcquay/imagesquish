@@ -186,7 +186,7 @@ var get = exports.get = function (req, res) {
         proxyManipulatedImage(req, res, bucket, imgId, manipulation);
     } else {
         path = '/' + bucketConfig.originPathPrefix + imgId;
-        storage.proxyRequest(req, res, S3_HOST, path);
+        storage.proxyRequest(req, res, bucketConfig.originHost, path);
         log.logItems('info', ['get', bucket, imgId, 'original']);
     }
 };

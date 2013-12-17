@@ -6,16 +6,6 @@ var http = require('http');
 AWS.config.loadFromPath('./config/aws.json');
 var s3 = new AWS.S3();
 
-exports.getObject = function(bucket, key, cb) {
-    var params = {
-        Bucket: bucket,
-        Key: key
-    };
-    s3.getObject(params, function(err, res) {
-        cb(err, res);
-    });
-};
-
 exports.upload = function(params, cb) {
     s3.putObject({
         ACL: 'public-read',
