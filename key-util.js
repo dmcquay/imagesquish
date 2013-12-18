@@ -21,15 +21,7 @@ exports.generateKey = function(bucket, imgId, manipulation) {
 };
 
 exports.generateUrl = function(req, bucket, imgId, manipulation, pathOnly) {
-    var url;
-    if (imgId.indexOf('/') !== -1) {
-        url = '/unmanaged/' + bucket + '/' + (manipulation || 'original') + '/' + imgId;
-    } else {
-        url = '/' + bucket + '/' + imgId;
-        if (manipulation) {
-            url += '/' + manipulation;
-        }
-    }
+    var url = '/' + bucket + '/' + (manipulation || 'original') + '/' + imgId;
     if (!pathOnly && req.headers.host) {
         url = 'http://' + req.headers.host + url;
     }
