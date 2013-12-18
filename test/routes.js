@@ -1,7 +1,8 @@
 var assert = require('assert');
+var config = require('../config');
+var proxy = require('../proxy');
 var routes = require('../routes');
 var sinon = require('sinon');
-var config = require('../config');
 var storage = require('../storage');
 
 describe('get function', function() {
@@ -82,10 +83,10 @@ describe('get function', function() {
             ]
         };
         var res = {};
-        var oldProxyRequest = storage.proxyRequest;
-        storage.proxyRequest = sinon.spy();
+        var proxyMock = sinon.mock(proxy);
+        proxyMock.expects('proxyRequest').withArgs(req, res, 'www.fakehost.com', '/prefix/mypic.jpg');
         routes.get(req, res);
-        assert(storage.proxyRequest.calledWith(req, res, 'www.fakehost.com', '/prefix/mypic.jpg'));
-        storage.proxyRequest = oldProxyRequest;
+        proxyMock.verify();
+        proxyMock.restore();
     });
 });
