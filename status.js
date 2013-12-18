@@ -8,6 +8,7 @@ var manipulationsQueueSizes = [],
     queueSizeTTLSeconds = 60 * 60 * 24, // 1 day
     queueSizesMaxLength = queueSizeTTLSeconds / queueSizePollIntervalSeconds;
 
+// Keep track of the queue sizes over time so it can be reported.
 setInterval(function() {
     manipulationsQueueSizes.push(concurrency.manipulationsSemaphore.queue.length);
     streamQueueSizes.push(concurrency.proxyStreamsSemaphore.queue.length);

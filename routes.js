@@ -4,6 +4,7 @@ var fs = require('fs');
 var keyUtil = require('./key-util');
 var log = require('./log');
 var image = require('./image');
+var proxy = require('./proxy');
 var status = require('./status');
 var storage = require('./storage');
 var util = require('util');
@@ -118,7 +119,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
     var s3key = keyUtil.generateKey(bucket, imgId, manipulation);
     var s3Bucket = config.buckets[bucket].manipulationsS3Bucket;
     var manipulationPath = '/' + s3Bucket + '/' + s3key;
-    storage.proxyRequest(req, res, S3_HOST, manipulationPath, function(err) {
+    proxy.proxyRequest(req, res, S3_HOST, manipulationPath, function(err) {
         if (err) {
             // image wasn't found so we need to generate it
             image.doManipulation(bucket, imgId, manipulation, function(err, waited) {
@@ -137,7 +138,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
                         log.logItems('error', ['get', bucket, imgId, manipulation, 'failed']);
                     }
                 } else {
-                    storage.proxyRequest(req, res, S3_HOST, manipulationPath);
+                    proxy.proxyRequest(req, res, S3_HOST, manipulationPath);
                     log.logItems('info', [
                         'get',
                         bucket,
@@ -186,7 +187,7 @@ var get = exports.get = function (req, res) {
         proxyManipulatedImage(req, res, bucket, imgId, manipulation);
     } else {
         path = '/' + bucketConfig.originPathPrefix + imgId;
-        storage.proxyRequest(req, res, bucketConfig.originHost, path);
+        proxy.proxyRequest(req, res, bucketConfig.originHost, path);
         log.logItems('info', ['get', bucket, imgId, 'original']);
     }
 };
