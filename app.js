@@ -2,11 +2,15 @@ var config = require('./config');
 var express = require('express');
 var routes = require('./routes');
 var http = require('http');
+var check = require('./check');
+var log = require('./log');
+
+check.initCheck();
 
 var app = express();
 
 // global settings
-app.set('port', config.port || 3000);
+app.set('port', process.env['IMAGESQUISH_PORT'] || 3000);
 
 // CORS middleware
 var allowCrossDomain = function(req, res, next) {
@@ -35,5 +39,5 @@ app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
 http.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
+  log.info('Express server listening on port ' + app.get('port'));
 });

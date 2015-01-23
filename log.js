@@ -1,12 +1,18 @@
-var config = require('./config');
 var winston = require('winston');
 
-if (config.logFile) {
-    winston.add(winston.transports.File, { filename:config.logFile });
-}
+var logger = new (winston.Logger)({
+    exitOnError: false,
+    transports: [
+        new winston.transports.Console({
+            handleExceptions: false,
+            json: false,
+            level: 'info'
+        })
+    ]
+});
 
-winston.logItems = function(level, items) {
+logger.logItems = function(level, items) {
     this.log(level, items.join(' '));
 };
 
-module.exports = winston;
+module.exports = logger;

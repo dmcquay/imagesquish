@@ -1,0 +1,5 @@
+config/*-config.json
+config/*-aws.json
+node_modules/*
+test/*
+.idea/*

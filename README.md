@@ -4,6 +4,18 @@
 
 ImageSquish is a standalone service that resizes your images on the fly. It is easy to setup, scales linearly, is cheap to operate because it is very efficient, requires no integration and provides the best experience possible for your users.
 
+# INSTALL
+
+install graphics magick (image magik might work too, but i haven't tested it)
+npm install .
+sorry it is not available on npm registry yet
+edit config/config.json and config/aws.json
+start with forever start app.js
+
+# USING WITH DOCKER
+
+    docker run -d -p 3000:3000 -e CONFIG_SOURCE=etcd -e AWS_ACCESS_KEY_ID=X -e AWS_SECRET_ACCESS_KEY=X dmcquay/imagesquish
+
 # QUICK EXAMPLE
 
 You have this image on your site

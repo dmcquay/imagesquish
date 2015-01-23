@@ -1,12 +1,4 @@
 var AWS = require('aws-sdk');
-var config = require('./config');
-var log = require('./log');
-
-try {
-    AWS.config.loadFromPath('./config/aws.json');
-} catch(err) {
-    log.log('warn', 'AWS config file is missing');
-}
 
 var s3 = new AWS.S3();
 

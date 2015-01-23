@@ -24,12 +24,13 @@ var DEFAULT_ORIGINAL_KEY_FORMAT = '{bucket}/originals/{imgId}'; // used for uplo
  * @returns {XML}
  */
 exports.generateKey = function(bucket, imgId, manipulation) {
-    var key;
+    var key,
+        buckets = config.get('buckets');
     if (manipulation) {
-        key = config.buckets[bucket].manipulationKeyFormat
+        key = buckets[bucket].manipulationKeyFormat
             || DEFAULT_MANIPULATION_KEY_FORMAT;
     } else {
-        key = config.buckets[bucket].originalKeyFormat
+        key = buckets[bucket].originalKeyFormat
             || DEFAULT_ORIGINAL_KEY_FORMAT;
     }
     key = key.replace('{bucket}', bucket);

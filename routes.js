@@ -18,13 +18,14 @@ exports.status = function(req, res) {
 };
 
 var doUpload = function(req, res, data, contentType, bucket, redirect) {
-    if (!config.buckets[bucket]) {
+    var buckets = config.get('buckets');
+    if (!buckets[bucket]) {
         res.writeHead(404, {'content-type': 'text/plain'});
         res.end('Bucket "' + bucket + '" does not exist.\n');
         return;
     }
 
-    if (!config.buckets[bucket].allowWrite) {
+    if (!buckets[bucket].allowWrite) {
         res.writeHead(403, {'content-type': 'text/plain'});
         res.end('You are not permitted to perform this operation.\n');
         return;
@@ -32,7 +33,7 @@ var doUpload = function(req, res, data, contentType, bucket, redirect) {
 
     var imgId = uuid.v4();
     var uploadParams = {
-        bucket: config.buckets[bucket].originalsS3Bucket,
+        bucket: buckets[bucket].originalsS3Bucket,
         data: data,
         contentType: contentType,
         key: keyUtil.generateKey(bucket, imgId)
@@ -114,15 +115,20 @@ exports.upload = function(req, res) {
 };
 
 var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
+    log.debug('beginning proxy of manipulated image');
     // check if the manipulated image already exists
     // if so, return it
+    var buckets = config.get('buckets');
     var s3key = keyUtil.generateKey(bucket, imgId, manipulation);
-    var s3Bucket = config.buckets[bucket].manipulationsS3Bucket;
+    log.debug('s3key: ' + s3key);
+    var s3Bucket = buckets[bucket].manipulationsS3Bucket;
     var manipulationPath = '/' + s3Bucket + '/' + s3key;
     proxy.proxyRequest(req, res, S3_HOST, manipulationPath, function(err) {
         if (err) {
+            log.debug('manipulated image not found. must generate.');
             // image wasn't found so we need to generate it
             image.doManipulation(bucket, imgId, manipulation, function(err, waited) {
+                log.debug('manipulation completed, either success or failure');
                 if (err) {
                     if (err.name && err.name === 'ImageDoesNotExistAtOrigin') {
                         res.writeHead(404, {'content-type': 'text-plain'});
@@ -155,6 +161,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
 };
 
 var get = exports.get = function (req, res) {
+    log.debug('get was called');
     var bucket = req.params[0],
         manipulation = req.params[1],
         imgId = req.params[2];
@@ -164,13 +171,15 @@ var get = exports.get = function (req, res) {
     }
 
     var path;
-    var bucketConfig = config.buckets[bucket];
+    log.debug('fetching bucket config');
+    var bucketConfig = config.get('buckets')[bucket];
 
     if (!bucketConfig) {
         res.writeHead(400, {'content-type': 'text/plain'});
         res.end('Bucket "' + bucket + '" does not exist.\n');
         return;
     }
+    log.debug('found bucket config');
 
     if (manipulation) {
         if (manipulation.indexOf('otf') === 0) {

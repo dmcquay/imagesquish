@@ -26,13 +26,16 @@ var parseOTFSteps = exports.parseOTFSteps = function(manipulation) {
 };
 
 exports.manipulate = function(img, manipulation, bucket) {
+    log.debug('beginning local manipulation');
     var steps;
     if (manipulation.indexOf('otf') === 0) {
         steps = parseOTFSteps(manipulation);
     } else {
-        steps = config.buckets[bucket].manipulations[manipulation];
+        steps = config.get('buckets')[bucket].manipulations[manipulation];
     }
+    log.debug('prepared steps');
     for (var i = 0; i < steps.length; i++) {
+        log.debug('performing step: ' + i);
         step = steps[i];
         if (customOperations[step.operation]) {
             customOperations[step.operation].apply(img, step.params);
@@ -41,13 +44,18 @@ exports.manipulate = function(img, manipulation, bucket) {
         } else {
             throw Error('NoSuchOperation');
         }
+        log.debug('DONE performing step: ' + i);
     }
+    log.debug('done with all manipulation steps');
     return img;
 };
 
 exports.uploadImage = function(img, s3Bucket, s3Key, contentType, cb) {
+    log.debug('starting uploadImage function');
     img.toBuffer(function(err, buffer) {
+        log.debug('image converted to buffer');
         if (err) {
+            log.error('error converting image to buffer');
             return cb(err);
         }
         var uploadParams = {
@@ -56,18 +64,22 @@ exports.uploadImage = function(img, s3Bucket, s3Key, contentType, cb) {
             contentType: contentType,
             key: s3Key
         };
+        log.debug('uploading to s3');
         storage.upload(uploadParams, function(err) {
+            log.debug('finished upload, or error');
             cb(err);
         });
     });
 };
 
 exports.doManipulation = function(bucket, imgId, manipulation, cb) {
+    log.debug('beginning manipulation');
+    var buckets = config.get('buckets');
     var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
-    var s3DestBucket = config.buckets[bucket].manipulationsS3Bucket;
+    var s3DestBucket = buckets[bucket].manipulationsS3Bucket;
 
-    var srcHost = config.buckets[bucket].originHost;
-    var srcPath = '/' + (config.buckets[bucket].originPathPrefix || '') + imgId;
+    var srcHost = buckets[bucket].originHost;
+    var srcPath = '/' + (buckets[bucket].originPathPrefix || '') + imgId;
 
     if (activeManipulations.isActive(s3DestKey)) {
         activeManipulations.wait(s3DestKey, function(err) {
@@ -79,6 +91,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
     activeManipulations.queue(s3DestKey);
     concurrency.manipulationsSemaphore.take(function() {
         activeManipulations.start(s3DestKey);
+        log.debug('successfully took semaphore ' + s3DestKey);
 
         var alreadyDone = false;
         var done = function(err) {
@@ -105,6 +118,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                     url: 'http://' + srcHost + srcPath
                 });
             }
+            log.debug('fetched original');
 
             var img = gm(res);
             try {
@@ -112,6 +126,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
             } catch (err) {
                 return done({name:err.message});
             }
+            log.debug('finished local image manipulation. uploading.');
             exports.uploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type'], done);
         });
 

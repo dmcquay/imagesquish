@@ -9,6 +9,7 @@
         "gm": "*",
         "konphyg": "*",
         "node-uuid": "*",
+        "node-etcd": "3.*",
         "semaphore": "*",
         "underscore": "*",
         "winston": "*"

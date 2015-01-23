@@ -1,0 +1,30 @@
+{
+  "buckets": {
+    "flats": {
+      "originHost": "s3.amazonaws.com",
+      "originPathPrefix": "com-example-images/",
+      "manipulationsS3Bucket": "com-example-image-manipulations",
+      "allowOTFManipulations": true,
+      "manipulationKeyFormat": "manipulations/{imgId}/{manipulation}",
+      "manipulations": {
+        "small": [
+          {
+            "operation": "resize",
+            "params": [ 100, null ]
+          }
+        ],
+        "624x410": [
+          {
+            "operation": "crop",
+            "params": [ 624, 410 ]
+          }
+        ]
+      }
+    },
+    "lifestyles": {
+      "inheritFrom": "flats",
+      "originPathPrefix": "com-athlete-staging-static/media/",
+      "manipulationsS3Bucket": "com-athlete-staging-static"
+    }
+  }
+}
