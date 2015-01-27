@@ -133,7 +133,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
                     if (err.name && err.name === 'ImageDoesNotExistAtOrigin') {
                         res.writeHead(404, {'content-type': 'text-plain'});
                         res.end('Image not found at origin. URL: ' + err.url);
-                        log.logItems('error', ['get', bucket, imgId, manipulation, 'not found']);
+                        log.logItems('error', ['get', bucket, imgId, manipulation, 'not found at ' + err.url]);
                     } else if (err.name && err.name === 'NoSuchOperation') {
                         res.writeHead(404, {'content-type': 'text-plain'});
                         res.end('Invalid operation found in this manipulation');
