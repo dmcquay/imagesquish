@@ -1,0 +1,26 @@
+[Unit]
+Description=ImageSquish Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+User=core
+TimeoutStartSec=0
+ExecStartPre=/usr/bin/docker pull dmcquay/imagesquish
+ExecStartPre=-/usr/bin/docker kill imagesquish%i
+ExecStartPre=-/usr/bin/docker rm imagesquish%i
+ExecStart=/usr/bin/bash -c "/usr/bin/docker run \
+	--name imagesquish%i \
+	-e CONFIG_SOURCE=etcd \
+	-e ETCD_HOST=172.17.42.1 \
+	-e AWS_ACCESS_KEY_ID=XXX \
+	-e AWS_SECRET_ACCESS_KEY=XXX \
+	-p 3000:3000 \
+	dmcquay/imagesquish"
+ExecStop=/usr/bin/docker stop imagesquish%i
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+Conflicts=imagesquish@*.service
