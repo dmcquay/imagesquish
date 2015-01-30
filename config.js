@@ -31,6 +31,7 @@ if (configSource == SOURCE_ETCD) {
     });
 } else if (configSource == SOURCE_ENV) {
     config = JSON.parse(process.env['IMAGESQUISH_BUCKETS']);
+    log.info('Loaded configuration parameters from environment.');
 } else {
     try {
         var konphyg = require('konphyg')(__dirname + '/config');

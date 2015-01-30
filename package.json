@@ -8,6 +8,7 @@
         "formidable": "*",
         "gm": "*",
         "konphyg": "*",
+        "newrelic": "*",
         "node-uuid": "*",
         "node-etcd": "3.*",
         "semaphore": "*",
