@@ -4,17 +4,60 @@
 
 ImageSquish is a standalone service that resizes your images on the fly. It is easy to setup, scales linearly, is cheap to operate because it is very efficient, requires no integration and provides the best experience possible for your users.
 
-# INSTALL
+#Setup Instructions
 
-install graphics magick (image magik might work too, but i haven't tested it)
-npm install .
-sorry it is not available on npm registry yet
-edit config/config.json and config/aws.json
-start with forever start app.js
+##Environment Variables
 
-# USING WITH DOCKER
+ - **AWS_ACCESS_KEY_ID** _(required)_
+ - **AWS_SECRET_ACCESS_KEY** _(required)_
+ - **IMAGESQUISH_PORT** _(optional)_ - The port ImageSquish will listen on. Default is 3000.
+ - **MAX_CONCURRENT_PROXY_STREAMS** _(optional)_ - The maximum number of images that ImageSquish will stream at once. If traffic exceeds this limit, it will be queued up. Default is 20. If your server has excellent I/O performance, I suggest increasing this.
+ - **MAX_CONCURRENT_MANIPULATIONS** _(optional)_ - The maximum number of images that will be manipulated (e.g. resized) in parallel. The default is the number of CPUs available. Most of the time it makes sense to leave this alone.
+ - **CONFIG_SOURCE** _(optional)_ - Set to "etcd" to provide your bucket configurations via etcd. Probably only interesting if you are using CoreOS.
+ - **ETCD_HOST** _(optional)_ - Provide a non-standard etcd host (default is 127.0.0.1)
+ - **ETCD_PORT** _(optional)_ - Provide a non-standard etcd port (default is 4001)
+ - **NEWRELIC_ENABLED** _(optional)_ - Enable NewRelic tracking
+ - **NEWRELIC_LICENSE_KEY** _(required if NEWRELIC_ENABLED is 1)
+ - **NEWRELIC_LOG_LEVEL** _(optional)_ - Default: info
+ - **NEWRELIC_APP_NAME** _(optional)_ - Default: ImageSquish
 
-    docker run -d -p 3000:3000 -e CONFIG_SOURCE=etcd -e AWS_ACCESS_KEY_ID=X -e AWS_SECRET_ACCESS_KEY=X dmcquay/imagesquish
+##Bucket Configuration
+
+The bucket configuration is what tells ImageSquish where to find your original images (your origin server), and what manipulations are available (plus some more goodies). For example, you might define "small" to mean that the image should be resized to 75x75.
+
+The bucket configuration is always provided in JSON format, but can be stored in two ways:
+
+ 1. Map the /data/config volume to a local directory and put your configuration in config.json in that directory.
+ 1. Tell ImageSquish via env variables to use etcd for the bucket config (see CONFIG_SOURCE env variable above) and then store this config in the /imagesquish key.
+
+Here is [an example bucket config](https://github.com/dmcquay/imagesquish/blob/master/config/example-config.json).
+
+##Run Natively
+
+ - Install graphics magick (image magik might work too, but i haven't tested it)
+ - `npm install .` (sorry it is not available on npm registry yet)
+ - Set required configuration parameters
+ - Start with `forever start app.js`
+
+##Run On Docker
+
+    docker run -e AWS_ACCESS_KEY_ID=XXX \
+        -e AWS_SECRET_ACCESS_KEY=XXX \
+        -p 3000:3000 \
+        -v /data/config:/path/to/my/configs \
+        dmcquay/imagesquish`
+
+The /data/config volume mapping can be omitted if you are using etcd for configuration.
+
+#Deploying using CoreOS
+
+I like deploying on CoreOS, so I've provided an [example fleet Unit File](https://github.com/dmcquay/imagesquish/blob/master/imagesquish%40.service) to make things easy. Just replace your AWS credentials at a minimum, set your bucket config in etcd, and then spin up 3 instances like this:
+
+    fleetctl start imagesquish@1.service
+    fleetctl start imagesquish@2.service
+    fleetctl start imagesquish@3.service
+
+Setting your config in etcd is slightly weird. I suggest keeping your config in a flat file somewhere to make maintenance and change tracking easier. To apply to etcd, copy the contents of the file, open a JavaScript console (like Chrome developer tools), type `a=[paste your code here]` and then `JSON.stringify(a)`. Copy the results of that and set in etcd like this: `etcdctl set /imagesquish '[paste here]'`.
 
 # QUICK EXAMPLE
 
@@ -42,8 +85,7 @@ Assuming you are running ImageSquish on `images.mysite.com`, request the small s
 * Your app server shouldn't be resizing images. It is CPU and memory hungry and scales differently.
 * Images should be generated in parallel when needed, and fast.
 * When you need a new image size, you shouldn't have to make some script to reprocess all existing images.
-* Image processing should be efficient (save $) and scale linearly.
-* It should be really easy so you can worry about more important things.
+* It should be really easy and scale effortlessly so you can worry about more important things.
 
 # HOW DOES IT WORK?
 
@@ -55,8 +97,7 @@ Assuming you are running ImageSquish on `images.mysite.com`, request the small s
 # LARGE SCALE? NO PROBLEM
 
 1. Though ImageSquish is robust enough to be used without a CDN, I still highly recommend using a CDN.
-1. Scale easily by adding more servers and putting them behind a load balancer or round robin DNS. It scales linearly.
-1. You can also just use [imagesquish.com](http://imagesquish.com) if you don't want to worry about hosting ImageSquish yourself.
+1. Scale easily by adding more servers and putting them behind a load balancer or round robin DNS. It scales linearly. The nodes do not need to know about each other.
 1. ImageSquish has been tested at high loads. If you manage to exceed what it can handle, it will not crumble. The requests will simply queue up very efficiently with low memory consumption and wait until your server can catch up.
 
 # INSTALL
@@ -81,44 +122,6 @@ one of these options:
 
 # IMAGESQUISH API
 
-## The Config Files
-
-ImageSquish needs two configuration files. The first config/aws.json and it stores your AWS credentials. This is needed
-to store your various image sizes in S3. Example:
-
-```js
-{
-    "accessKeyId": "[MY_ACCESS_KEY_ID]",
-    "secretAccessKey": "[MY_SECRET_ACCESS_KEY]"
-}
-```
-
-The second config file is config/config.json. Here's a basic example:
-
-```js
-{
-    "buckets": {
-        "test": {  // Everthing is grouped into buckets (not to be confused with AWS S3 buckets)
-            "originHost": "www.mysite.com",               // Origin server for your images
-            "manipulationsS3Bucket": "com-athlete-ezimg", // Where to store your sizes (called "manipulations")
-
-            // And here are the actual size definitions (aka "manipulations")
-            "manipulations": {
-                "small": [
-                    {
-                        "operation": "resize",
-                        "params": [100, 100]
-                    },
-                    {
-                        // You can provide multiple operations per manipulation, to be executed sequentially.
-                        "operation": "autoOrient"
-                    }
-                ]
-            }
-        }
-    }
-}
-```
 
 ## Supported Operations
 
@@ -206,6 +209,16 @@ You can get some status information at /status which looks something like this. 
   }
 }
 ```
+
+#DEPLOYMENT SUGGESTIONS
+
+##USE A CDN
+
+ImageSquish is totally fast. It only generates a version of an image once. It is cached in S3 and ImageSquish just acts as a streaming proxy for S3 the next time the image is accessed. That being said, I suggest putting S3 behind a CDN. It is super easy and makes the service just that much more bullet proof.
+
+##USE A LOAD BALANCER
+
+To scale horizontally, simply add another node. If you're using fleet, it is as simple as another `fleet start imagesquish@2.service` call. The nodes don't need to know anything about each other. Put them behind a load balancer and point the CDN to the load balancer and voila, you are ready to scale like crazy.
 
 # DJANGO INTEGRATION
 
