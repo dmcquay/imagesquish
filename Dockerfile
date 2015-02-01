@@ -13,8 +13,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     npm install .
 
-VOLUME ["/data", "/data/config"]
-
 EXPOSE 3000
 
 CMD node app.js
