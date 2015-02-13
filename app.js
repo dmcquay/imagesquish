@@ -48,6 +48,12 @@ app.post('/:bucket/upload/multipart', routes.uploadMultipart);
 app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
-http.createServer(app).listen(app.get('port'), function(){
+server = http.createServer(app).listen(app.get('port'), function(){
   log.info('Express server listening on port ' + app.get('port'));
+});
+
+process.on('SIGINT', function () {
+    server.close(function() {
+        process.exit(0);
+    });
 });
