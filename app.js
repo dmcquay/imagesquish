@@ -59,3 +59,4 @@ function clean_exit() {
 }
 process.on('SIGINT', clean_exit);
 process.on('SIGTERM', clean_exit);
+process.on('SIGHUP', clean_exit);
