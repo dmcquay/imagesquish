@@ -15,4 +15,4 @@ RUN apt-get update && \
 
 EXPOSE 3000
 
-CMD node app.js
+CMD ["node", "app.js"]
