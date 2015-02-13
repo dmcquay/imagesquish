@@ -52,8 +52,10 @@ server = http.createServer(app).listen(app.get('port'), function(){
   log.info('Express server listening on port ' + app.get('port'));
 });
 
-process.on('SIGINT', function () {
+function clean_exit() {
     server.close(function() {
         process.exit(0);
     });
-});
+}
+process.on('SIGINT', clean_exit);
+process.on('SIGTERM', clean_exit);
