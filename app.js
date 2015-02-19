@@ -35,10 +35,12 @@ app.use(express.logger());
 app.use(allowCrossDomain);
 app.use(app.router);
 
-// development only
-if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
-}
+// global catch-all error handling
+app.use(function(err, req, res, next) {
+    res.status(500);
+    log.error(err.stack);
+    res.send('There was an error processing this request.');
+});
 
 // routes
 app.get('/status', routes.status);
