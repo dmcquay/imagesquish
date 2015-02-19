@@ -30,17 +30,19 @@ var allowCrossDomain = function(req, res, next) {
     next();
 };
 
-// middleware
-app.use(express.logger());
-app.use(allowCrossDomain);
-app.use(app.router);
+// track open requests so that when we close the server we can wait for all requests to finish
+var openRequestsCount = 0;
+var trackOpenRequests = function(req, res, next) {
+    openRequestsCount++;
+    res.on('finish', function() {
+        openRequestsCount--;
+    });
+    next();
+};
 
-// global catch-all error handling
-app.use(function(err, req, res, next) {
-    res.status(500);
-    log.error(err.stack);
-    res.send('There was an error processing this request.');
-});
+// middleware
+app.use(allowCrossDomain);
+app.use(trackOpenRequests);
 
 // routes
 app.get('/status', routes.status);
@@ -50,15 +52,48 @@ app.post('/:bucket/upload/multipart', routes.uploadMultipart);
 app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
+// global catch-all error handling
+app.use(function(err, req, res, next) {
+    res.status(500);
+    log.error(err.stack);
+    res.send('There was an error processing this request.');
+});
+
 server = http.createServer(app).listen(app.get('port'), function(){
   log.info('Express server listening on port ' + app.get('port'));
 });
 
+// Maintain a hash of all connected sockets so we can close them on exit
+var sockets = {}, nextSocketId = 0;
+server.on('connection', function (socket) {
+    var socketId = nextSocketId++;
+    sockets[socketId] = socket;
+    socket.once('close', function () {
+        delete sockets[socketId];
+    });
+});
+
+// Exit cleanly. Otherwise when these signals are sent, it will exit with code 130.
+// When running as a docker container in CoreOS, systemd will think that it failed.
+// We want to let it know that the exit was clean.
 function clean_exit() {
     server.close(function() {
         process.exit(0);
     });
+
+    // wait for all requests to finish. then destroy all open sockets so the server will close.
+    (function finish() {
+        if (openRequestsCount > 0) {
+            setTimeout(finish, 100);
+        } else {
+            // destroy all open sockets
+            for (var socketId in sockets) {
+                sockets[socketId].destroy();
+            }
+        }
+    })();
 }
+
 process.on('SIGINT', clean_exit);
 process.on('SIGTERM', clean_exit);
 process.on('SIGHUP', clean_exit);
