@@ -14,6 +14,7 @@ ImageSquish is a standalone service that resizes your images on the fly. It is e
  - **MAX_CONCURRENT_PROXY_STREAMS** _(optional)_ - The maximum number of images that ImageSquish will stream at once. If traffic exceeds this limit, it will be queued up. Default is 20. If your server has excellent I/O performance, I suggest increasing this.
  - **MAX_CONCURRENT_MANIPULATIONS** _(optional)_ - The maximum number of images that will be manipulated (e.g. resized) in parallel. The default is the number of CPUs available. Most of the time it makes sense to leave this alone.
  - **CONFIG_SOURCE** _(optional)_ - Set to "etcd" to provide your bucket configurations via etcd. Probably only interesting if you are using CoreOS.
+ - **LOG_LEVEL** _(optional)_ - Set the logging level to debug to get more info or none to avoid any (default is info)
  - **ETCD_HOST** _(optional)_ - Provide a non-standard etcd host (default is 127.0.0.1)
  - **ETCD_PORT** _(optional)_ - Provide a non-standard etcd port (default is 4001)
  - **NEWRELIC_ENABLED** _(optional)_ - Enable NewRelic tracking

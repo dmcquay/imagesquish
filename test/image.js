@@ -10,7 +10,7 @@ var storage = require('../storage');
 
 describe('image.doManipulation', function() {
     beforeEach(function() {
-        config.buckets = {
+        config.set('buckets', {
             mybucket: {
                 manipulations: {
                     small: [{
@@ -19,7 +19,7 @@ describe('image.doManipulation', function() {
                     }]
                 }
             }
-        };
+        });
     });
 
     it('should make an http request with correct host & path in uncached case', function(done) {

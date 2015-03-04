@@ -37,12 +37,12 @@ if (configSource == SOURCE_ETCD) {
         var konphyg = require('konphyg')(__dirname + '/config');
         config = konphyg('config');
         populateInheritedBuckets(config.buckets);
-        loaded = true;
         log.info('Loaded configuration parameters from file.');
     } catch (err) {
-        log.error("Failed to load configuration from file.");
-        process.exit();
+        log.info("No configuration parameters found. Using defaults.");
+        config = { "buckets": {} };
     }
+    loaded = true;
 }
 
 
@@ -73,6 +73,13 @@ exports.get = function(key) {
         log.error('Tried to fetch config value before config finished loading or config failed to load.');
     }
     return config[key];
+};
+
+exports.set = function(key, value) {
+    if (!loaded) {
+        log.error('Tried to fetch config value before config finished loading or config failed to load.');
+    }
+    config[key] = value;
 };
 
 exports.waitUntilLoaded = function(cb) {

@@ -6,7 +6,7 @@ var logger = new (winston.Logger)({
         new winston.transports.Console({
             handleExceptions: false,
             json: false,
-            level: 'info'
+            level: process.env['LOG_LEVEL'] || 'info'
         })
     ]
 });

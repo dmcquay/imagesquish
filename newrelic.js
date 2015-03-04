@@ -1,9 +1,19 @@
+var log = require('./log');
+
 /**
  * New Relic agent configuration.
  *
  * See lib/config.defaults.js in the agent distribution for a more complete
  * description of configuration variables and their potential values.
  */
+
+// New Relic defaults to enabled. We want the opposite.
+if (!process.env['NEW_RELIC_ENABLED']) {
+    process.env['NEW_RELIC_ENABLED'] = 'false';
+} else {
+    log.info('New Relic is enabled');
+}
+
 exports.config = {
   /**
    * Array of application names.

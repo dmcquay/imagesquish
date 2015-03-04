@@ -1,4 +1,6 @@
-var newrelic = require('newrelic');
+if (process.env['NEW_RELIC_ENABLED']) {
+    require('newrelic');
+}
 
 var config = require('./config');
 var express = require('express');
@@ -6,10 +8,6 @@ var routes = require('./routes');
 var http = require('http');
 var check = require('./check');
 var log = require('./log');
-
-if (process.env['NEW_RELIC_ENABLED']) {
-    log.info('New Relic is enabled');
-}
 
 check.initCheck();
 
