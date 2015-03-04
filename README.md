@@ -175,8 +175,6 @@ The important config options have already been mentioned, but here's a detailed 
 * `manipulations` - See the config example above
 * `allowOTFManipulations` - Defeault is `false`. If this is `true`, then you don't have to pre-configure your manipulations. Instead you can just form URLs like this: `http://images.mysite.com/default/otf:resize(100)/12345.jpg`. This makes you vulnerable to DOS attacks, so if you want to be extra careful, leave this disabled.
 
-Note: there are some additional options for uploading. See "UPLOAD IMAGES" section below.
-
 # STATUS
 
 You can get some status information at /status which looks something like this. It should give you a pretty good idea of how well your instance is handling current load.
@@ -283,22 +281,11 @@ superbly. Let us know if you're using it too!
 ImageSquish is awesome and is easy to use, but if you get stuck, just submit an issue on GitHub and add the "question" label. I'm happy to help.
 
 
-# UPLOADING IMAGES
-
-ImageSquish supports image uploads too, though it is not widely used or supported at this point. If you want to try it out, add `"allowWrite": true` to your bucket config and then try uploading an image via the command line like this:
-
-curl http://localhost:3000/default/upload --data-binary @Scan.jpeg -H "Content-Type:image/jpeg" -v
-
-By default it stores the uploaded images to the same bucket as your cached sizes, but you can configure that with `originalsS3Bucket` in your bucket config.
-
-By default the S3 key for uploaded images is `{bucket}/originals/{imgId}` and you can configure that with `originalKeyFormat` in your bucket config.
-
-
 # LICENSE
 
 The MIT License (MIT)
 
-Copyright (c) 2013 Dustin McQuay
+Copyright (c) 2015 Dustin McQuay
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

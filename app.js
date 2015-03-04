@@ -1,8 +1,4 @@
-var newrelicEnabled = false;
-if (process.env['NEWRELIC_ENABLED']) {
-    require('newrelic');
-    newrelicEnabled = true;
-}
+var newrelic = require('newrelic');
 
 var config = require('./config');
 var express = require('express');
@@ -11,7 +7,7 @@ var http = require('http');
 var check = require('./check');
 var log = require('./log');
 
-if (newrelicEnabled) {
+if (process.env['NEW_RELIC_ENABLED']) {
     log.info('New Relic is enabled');
 }
 
@@ -46,10 +42,6 @@ app.use(trackOpenRequests);
 
 // routes
 app.get('/status', routes.status);
-app.post('/:bucket/upload', routes.upload);
-app.post('/:bucket/upload/raw', routes.uploadRaw);
-app.post('/:bucket/upload/multipart', routes.uploadMultipart);
-app.get(/^\/um\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
 // global catch-all error handling
