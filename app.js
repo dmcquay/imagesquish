@@ -44,8 +44,9 @@ app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
 // global catch-all error handling
 app.use(function(err, req, res, next) {
-    res.status(500);
+    log.error('Error on ' + req.method + ' ' + req.url);
     log.error(err.stack);
+    res.status(500);
     res.send('There was an error processing this request.');
 });
 

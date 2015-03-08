@@ -68,7 +68,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
 };
 
 var get = exports.get = function (req, res) {
-    log.debug('get was called');
+    log.info('GET ' + req.url);
     var bucket = req.params[0],
         manipulation = req.params[1],
         imgId = req.params[2];
