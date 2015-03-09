@@ -17,37 +17,42 @@ exports.proxyRequest = function(req, res, host, path, cb) {
         // path instead, which is what we want.
         delete req.headers['host'];
 
-        var proxyReq = http.request({
-            host: host,
-            method: req.method,
-            path: path,
-            headers: req.headers
-        });
-
-        proxyReq.on('response', function(proxyRes) {
-            var status = proxyRes.statusCode;
-            if (status != 200 && status != 304 && cb) {
-                proxyReq.abort();
-                leaveSem();
-                cb('Proxy request returned non 200 response.');
-            } else {
-                proxyRes.on('data', function(chunk) {
-                    res.write(chunk, 'binary');
-                });
-                proxyRes.on('end', function() {
-                    res.end();
-                    leaveSem();
-                    if (cb) {
-                        cb();
-                    }
-                });
-                res.writeHead(proxyRes.statusCode, proxyRes.headers);
-            }
-            res.on('close', function() {
-                proxyReq.abort();
-                leaveSem();
+        try {
+            var proxyReq = http.request({
+                host: host,
+                method: req.method,
+                path: path,
+                headers: req.headers
             });
-        });
-        proxyReq.end();
+
+            proxyReq.on('response', function (proxyRes) {
+                var status = proxyRes.statusCode;
+                if (status != 200 && status != 304 && cb) {
+                    proxyReq.abort();
+                    leaveSem();
+                    cb('Proxy request returned non 200 response.');
+                } else {
+                    proxyRes.on('data', function (chunk) {
+                        res.write(chunk, 'binary');
+                    });
+                    proxyRes.on('end', function () {
+                        res.end();
+                        leaveSem();
+                        if (cb) {
+                            cb();
+                        }
+                    });
+                    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                }
+                res.on('close', function () {
+                    proxyReq.abort();
+                    leaveSem();
+                });
+            });
+            proxyReq.end();
+        } catch(err) {
+            leaveSem();
+            throw err;
+        }
     });
 };
