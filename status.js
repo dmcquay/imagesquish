@@ -37,6 +37,7 @@ var getAvgQueueSizes = function(queueSizes) {
 
 exports.getStatusInfo = function() {
     return {
+        instanceName: process.env['IMAGESQUISH_INSTANCE_NAME'] || 'default',
         manipulations: {
             currentCount: concurrency.manipulationsSemaphore.current,
             limit: concurrency.manipulationsSemaphore.capacity,
