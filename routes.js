@@ -1,12 +1,27 @@
-var newrelic = require('newrelic');
 var config = require('./config');
+var newrelic = require('newrelic');
+var health = require('./health');
+var image = require('./image');
 var keyUtil = require('./key-util');
 var log = require('./log');
-var image = require('./image');
 var proxy = require('./proxy');
 var status = require('./status');
 
 var S3_HOST = 's3.amazonaws.com';
+
+exports.healthCheck = function(req, res) {
+    newrelic.setTransactionName('HealthCheck');
+    health.check(function(isHealthy, unhealthyReason) {
+        var responseData = {
+            healthy: isHealthy
+        };
+        if (!isHealthy) {
+            responseData.unhealthyReason = unhealthyReason;
+        }
+        res.writeHead(isHealthy ? 200 : 503, {'content-type': 'application/json'});
+        res.end(JSON.stringify(responseData));
+    });
+};
 
 exports.status = function(req, res) {
     newrelic.setTransactionName('Status');

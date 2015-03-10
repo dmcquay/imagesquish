@@ -90,6 +90,17 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
 
     activeManipulations.queue(s3DestKey);
     concurrency.manipulationsSemaphore.take(function() {
+        var leftSem = false;
+        var leaveSem = function() {
+            if (!leftSem) {
+                leftSem = true;
+                concurrency.manipulationsSemaphore.leave();
+            }
+        };
+
+        // ensure we always leave the semaphore with a 30 second timeout
+        setTimeout(leaveSem, 30000);
+
         activeManipulations.start(s3DestKey);
         log.debug('successfully took semaphore ' + s3DestKey);
 
@@ -100,7 +111,7 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                 return;
             }
             activeManipulations.finish(s3DestKey, err);
-            concurrency.manipulationsSemaphore.leave();
+            leaveSem();
             cb(err);
             alreadyDone = true;
         };

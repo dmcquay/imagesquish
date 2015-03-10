@@ -15,7 +15,7 @@
     },
     "devDependencies": {
         "mocha": "1.15.1",
-        "sinon": "1.7.3"
+        "sinon": "1.13.0"
     },
     "repository": {
         "type": "git",

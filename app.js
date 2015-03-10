@@ -40,6 +40,7 @@ app.use(trackOpenRequests);
 
 // routes
 app.get('/status', routes.status);
+app.get('/health-check', routes.healthCheck);
 app.get(/^\/([^\/]+)\/([^\/]+)\/(.+)/, routes.get);
 
 // global catch-all error handling
