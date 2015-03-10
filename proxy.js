@@ -17,6 +17,9 @@ exports.proxyRequest = function(req, res, host, path, cb) {
         // path instead, which is what we want.
         delete req.headers['host'];
 
+        // in 10 seconds, leave the semaphore no matter what. proxy streaming should never take that long.
+        setTimeout(leaveSem, 10000);
+
         try {
             var proxyReq = http.request({
                 host: host,
