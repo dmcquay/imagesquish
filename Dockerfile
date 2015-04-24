@@ -1,4 +1,4 @@
-FROM dockerfile/nodejs
+FROM node
 
 MAINTAINER Dustin McQuay <dmcquay@gmail.com>
 
@@ -11,8 +11,11 @@ RUN apt-get update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/{apt,dpkg,cache,log} && \
     rm -rf /var/lib/apt/lists/* && \
+    cd /data && \
     npm install .
 
 EXPOSE 3000
+
+WORKDIR /data
 
 CMD ["node", "app.js"]
