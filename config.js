@@ -1,5 +1,8 @@
 var log = require('./log'),
-    Etcd = require('node-etcd');
+    Etcd = require('node-etcd'),
+    AWS,
+    s3,
+    params;
 
 
 var config,
@@ -7,6 +10,7 @@ var config,
     waiting = [],
     SOURCE_ETCD = 'etcd',
     SOURCE_ENV = 'env',
+    SOURCE_S3 = 's3',
     configSource = process.env['CONFIG_SOURCE'],
     etcdHost = process.env['ETCD_HOST'] || '127.0.0.1',
     etcdPort = process.env['ETCD_PORT'] || '4001',
@@ -31,7 +35,26 @@ if (configSource == SOURCE_ETCD) {
     });
 } else if (configSource == SOURCE_ENV) {
     config = JSON.parse(process.env['IMAGESQUISH_BUCKETS']);
+    populateInheritedBuckets(config.buckets);
+    loaded = true;
     log.info('Loaded configuration parameters from environment.');
+} else if (configSource == SOURCE_S3) {
+    AWS = require('aws-sdk');
+    s3 = new AWS.S3();
+    params = {
+        Bucket: process.env['S3_CONFIG_BUCKET'],
+        Key: process.env['S3_CONFIG_KEY']
+    };
+    s3.getObject(params, function(err, data) {
+        if (err) {
+            throw(err);
+        } else {
+            config = JSON.parse(data.Body);
+            populateInheritedBuckets(config.buckets);
+            loaded = true;
+            log.info('Loaded configuration parameters from s3.');
+        }
+    });
 } else {
     try {
         var konphyg = require('konphyg')(__dirname + '/config');
