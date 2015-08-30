@@ -1,27 +1,29 @@
 {
-    "name": "imagesquish",
-    "version": "0.0.3",
-    "dependencies": {
-        "aws-sdk": "1.9.0",
-        "express": "4.11.2",
-        "forever": "0.13.0",
-        "gm": "1.13.3",
-        "konphyg": "1.2.1",
-        "newrelic": "1.15.0",
-        "node-etcd": "3.0.2",
-        "semaphore": "1.0.1",
-        "underscore": "1.5.2",
-        "winston": "0.7.2"
-    },
-    "devDependencies": {
-        "mocha": "1.15.1",
-        "sinon": "1.13.0"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/dmcquay/imagesquish"
-    },
-    "scripts": {
-        "test": "LOG_LEVEL=none mocha"
-    }
+  "name": "imagesquish",
+  "version": "0.0.3",
+  "dependencies": {
+    "aws-sdk": "1.9.0",
+    "bluebird": "^2.9.34",
+    "deep-equal": "^1.0.1",
+    "express": "4.11.2",
+    "forever": "0.13.0",
+    "gm": "1.13.3",
+    "konphyg": "1.2.1",
+    "newrelic": "1.15.0",
+    "node-etcd": "3.0.2",
+    "semaphore": "1.0.1",
+    "underscore": "1.5.2",
+    "winston": "0.7.2"
+  },
+  "devDependencies": {
+    "mocha": "1.15.1",
+    "sinon": "1.13.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dmcquay/imagesquish"
+  },
+  "scripts": {
+    "test": "LOG_LEVEL=none mocha"
+  }
 }

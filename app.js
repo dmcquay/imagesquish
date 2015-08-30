@@ -51,8 +51,12 @@ app.use(function(err, req, res, next) {
     res.send('There was an error processing this request.');
 });
 
-server = http.createServer(app).listen(app.get('port'), function(){
-  log.info('Express server listening on port ' + app.get('port'));
+var server = http.createServer(app);
+log.info('Waiting for config to load...');
+config.once('load', function() {
+    server.listen(app.get('port'), function(){
+        log.info('Express server listening on port ' + app.get('port'));
+    });
 });
 
 // Maintain a hash of all connected sockets so we can close them on exit
