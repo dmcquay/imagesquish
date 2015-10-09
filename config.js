@@ -141,7 +141,8 @@ Config.prototype._loadFromLocalFile = function () {
             var konphyg = require('konphyg')(__dirname + '/config');
             resolve(konphyg('config'));
         } catch (err) {
-            reject(err);
+            log.error("Failed to load config from local file. Falling back to defaults.");
+            resolve({buckets:{}});
         }
     });
 };
