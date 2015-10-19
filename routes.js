@@ -37,9 +37,10 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
     var s3key = keyUtil.generateKey(bucket, imgId, manipulation);
     log.debug('s3key: ' + s3key);
     var s3Bucket = buckets[bucket].manipulationsS3Bucket;
-    var manipulationPath = '/' + s3Bucket + '/' + s3key;
+    var manipulationPath = '/' + s3key;
+    var host = s3Bucket + '.' + S3_HOST;
     newrelic.setTransactionName('Manipulation (cached)');
-    proxy.proxyRequest(req, res, S3_HOST, manipulationPath, function(err) {
+    proxy.proxyRequest(req, res, host, manipulationPath, function(err) {
         if (err) {
             newrelic.setTransactionName('Manipulation:' + manipulation);
             log.debug('manipulated image not found. must generate.');
@@ -65,7 +66,7 @@ var proxyManipulatedImage = function(req, res, bucket, imgId, manipulation) {
                     if (waited) {
                         newrelic.setTransactionName('Wait:' + manipulation);
                     }
-                    proxy.proxyRequest(req, res, S3_HOST, manipulationPath);
+                    proxy.proxyRequest(req, res, host, manipulationPath);
                     log.logItems('info', [
                         'get',
                         bucket,
