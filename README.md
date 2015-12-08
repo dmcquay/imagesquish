@@ -273,8 +273,8 @@ profile.image.url_small
 
 # IMAGESQUISH IN THE WILD
 ImageSquish is being used in a few places right now:
-- [[Athlete.com|http://www.athlete.com]]
-- [[Steals.com|http://www.steals.com]]
+- [Athlete.com](http://www.athlete.com)
+- [Steals.com](http://www.steals.com)
 
 Let us know if you're using it too!
 
