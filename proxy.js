@@ -41,9 +41,7 @@ exports.proxyRequest = function(req, res, host, path, cb) {
                     proxyRes.on('end', function () {
                         res.end();
                         leaveSem();
-                        if (cb) {
-                            cb();
-                        }
+                        cb && cb();
                     });
                     res.writeHead(proxyRes.statusCode, proxyRes.headers);
                 }

@@ -1,4 +1,4 @@
-FROM node
+FROM node:0.12.9
 
 MAINTAINER Dustin McQuay <dmcquay@gmail.com>
 
