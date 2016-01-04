@@ -273,6 +273,7 @@ profile.image.url_small
 
 # IMAGESQUISH IN THE WILD
 ImageSquish is being used in a few places right now:
+
 - [Athlete.com](http://www.athlete.com)
 - [Steals.com](http://www.steals.com)
 
@@ -281,7 +282,7 @@ Let us know if you're using it too!
 # NEED HELP?
 
 ImageSquish is awesome and is easy to use, but if you get stuck, just submit an issue on GitHub and add the "question" label. I'm happy to help.
-You can also create a question in StackOverflow and [[http://stackoverflow.com/questions/tagged/imagesquish|use the "imagesquish"]] tag
+You can also create a question in StackOverflow and use the [imagesquish](http://stackoverflow.com/questions/tagged/imagesquish) tag.
 
 
 # LICENSE
