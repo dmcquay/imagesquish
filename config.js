@@ -128,7 +128,7 @@ Config.prototype._loadFromS3 = function () {
                 try {
                     resolve(JSON.parse(data.Body));
                 } catch(err) {
-                    reject(err);
+                    reject(err)
                 }
             }
         });
@@ -136,13 +136,14 @@ Config.prototype._loadFromS3 = function () {
 };
 
 Config.prototype._loadFromLocalFile = function () {
+    var minimalEmptyConfig = {buckets: {}};
     return new Promise(function(resolve, reject) {
         try {
             var konphyg = require('konphyg')(__dirname + '/config');
             resolve(konphyg('config'));
         } catch (err) {
             log.error("Failed to load config from local file. Falling back to defaults.");
-            resolve({buckets:{}});
+            resolve(minimalEmptyConfig)
         }
     });
 };
