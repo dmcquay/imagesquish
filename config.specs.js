@@ -1,7 +1,8 @@
 var assert = require('assert');
-var config = require('../config');
 
-describe('config', function() {
+var config = require('./config');
+
+describe.only('config', function() {
     it('buckets can inherit', function() {
         var buckets = {
             "main": {

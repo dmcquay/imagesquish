@@ -1,6 +1,7 @@
 var assert = require('assert');
-var ActiveManipulations = require('../manipulations-status').ActiveManipulations;
 var sinon = require('sinon');
+
+var ActiveManipulations = require('./manipulations-status').ActiveManipulations;
 
 describe('ActiveManipulations', function() {
     it('should be initialized with an empty list', function() {

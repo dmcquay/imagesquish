@@ -1,8 +1,9 @@
 var assert = require('assert');
-var concurrency = require('../concurrency');
 var http = require('http');
-var proxy = require('../proxy');
 var sinon = require('sinon');
+
+var concurrency = require('./concurrency');
+var proxy = require('./proxy');
 
 describe('proxy.proxyRequest', function() {
     it('should exit the semaphore when request creation fails', function() {

@@ -1,11 +1,12 @@
-var activeManipulations = require('../manipulations-status').activeManipulations;
 var assert = require('assert');
-var concurrency = require('../concurrency');
-var config = require('../config');
 var http = require('http');
-var image = require('../image');
 var sinon = require('sinon');
-var storage = require('../storage');
+
+var activeManipulations = require('./manipulations-status').activeManipulations;
+var concurrency = require('./concurrency');
+var config = require('./config');
+var image = require('./image');
+var storage = require('./storage');
 
 
 describe('image.doManipulation', function() {

@@ -1,9 +1,10 @@
 var assert = require('assert');
-var config = require('../config');
-var proxy = require('../proxy');
-var routes = require('../routes');
 var sinon = require('sinon');
-var storage = require('../storage');
+
+var config = require('./config');
+var proxy = require('./proxy');
+var routes = require('./routes');
+var storage = require('./storage');
 
 describe('get function', function() {
     it('returns 400 if the bucket does not exist', function() {

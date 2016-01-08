@@ -1,8 +1,9 @@
 var assert = require('assert');
-var config = require('../config');
-var health = require('../health');
 var sinon = require('sinon');
-var status = require('../status');
+
+var config = require('./config');
+var health = require('./health');
+var status = require('./status');
 
 describe('health.check', function() {
     it('should pass under normal conditions', function(done) {
