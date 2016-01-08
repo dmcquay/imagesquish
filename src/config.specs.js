@@ -2,7 +2,7 @@ var assert = require('assert');
 
 var config = require('./config');
 
-describe.only('config', function() {
+describe('config', function() {
     it('buckets can inherit', function() {
         var buckets = {
             "main": {

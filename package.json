@@ -27,6 +27,6 @@
     "url": "https://github.com/dmcquay/imagesquish"
   },
   "scripts": {
-    "test": "LOG_LEVEL=none mocha ./**/*.specs.js"
+    "test": "LOG_LEVEL=none mocha ./src/**/*.specs.js"
   }
 }

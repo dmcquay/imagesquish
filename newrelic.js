@@ -1,4 +1,4 @@
-var log = require('./log');
+var log = require('./src/log');
 
 /**
  * New Relic agent configuration.

@@ -1,4 +1,4 @@
 node_modules/*
 .idea/*
-config/config.json
-config/aws.json
+src/config/config.json
+src/config/aws.json
