@@ -59,32 +59,31 @@ class Config extends events.EventEmitter {
         this.config[key] = value;
     }
 
-    _load() {
-        var self = this,
-            promise;
+    async _load() {
+        let config;
 
-        if (this.source === SOURCE_ETCD) {
-            promise = this._loadFromEtcd();
-        } else if (this.source === SOURCE_ENV) {
-            promise = this._loadFromEnv();
-        } else if (this.source === SOURCE_S3) {
-            promise = this._loadFromS3();
-        } else {
-            promise = this._loadFromLocalFile();
-        }
+        try {
+            if (this.source === SOURCE_ETCD) {
+                config = await this._loadFromEtcd();
+            } else if (this.source === SOURCE_ENV) {
+                config = await this._loadFromEnv();
+            } else if (this.source === SOURCE_S3) {
+                config = await this._loadFromS3();
+            } else {
+                config = await this._loadFromLocalFile();
+            }
 
-        promise.then(function (config) {
-            self._populateInheritedBuckets(config.buckets);
-            if (!deepEqual(config, self.config)) {
-                log.info("config changed. \nold: ", JSON.stringify(self.config), "\n new: ", JSON.stringify(config));
-                self.config = config;
-                self.emit('load');
+            this._populateInheritedBuckets(config.buckets);
+            if (!deepEqual(config, this.config)) {
+                log.info("config changed. \nold: ", JSON.stringify(this.config), "\n new: ", JSON.stringify(config));
+                this.config = config;
+                this.emit('load');
             } else {
                 log.debug('Loaded new config, but it was identical');
             }
-        }).catch(function (err) {
-            log.error('Failed to read config from ' + self.source + '. Error: ' + util.inspect(err));
-            if (self.initialized) {
+        } catch(err) {
+            log.error('Failed to read config from ' + this.source + '. Error: ' + util.inspect(err));
+            if (this.initialized) {
                 // if we have already started up, then we want to keep running w/ the old config
                 log.error('Continuing with old config.');
             } else {
@@ -92,10 +91,10 @@ class Config extends events.EventEmitter {
                 log.error('Cannot startup without a config.');
                 throw(err);
             }
-        });
+        }
     }
 
-    _loadFromEtcd(cb) {
+    async _loadFromEtcd(cb) {
         return new Promise(function(resolve, reject) {
             var etcd = new Etcd(etcdHost, etcdPort);
             etcd.get(etcdRoot, {recursive: true}, function (err, result) {
@@ -112,13 +111,13 @@ class Config extends events.EventEmitter {
         });
     }
 
-    _loadFromEnv() {
+    async _loadFromEnv() {
         return new Promise(function(resolve, reject) {
             resolve(JSON.parse(process.env['IMAGESQUISH_BUCKETS']));
         });
     }
 
-    _loadFromS3() {
+    async _loadFromS3() {
         return new Promise(function (resolve, reject) {
             var AWS = require('aws-sdk');
             var s3 = new AWS.S3();
@@ -140,7 +139,7 @@ class Config extends events.EventEmitter {
         });
     }
 
-    _loadFromLocalFile() {
+    async _loadFromLocalFile() {
         var minimalEmptyConfig = {buckets: {}};
         var self = this;
         return new Promise(function(resolve, reject) {
