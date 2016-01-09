@@ -1,7 +1,7 @@
 var assert = require('assert');
 var sinon = require('sinon');
 
-var config = require('./config');
+import config from './config';
 var health = require('./health');
 var status = require('./status');
 
@@ -13,26 +13,39 @@ describe('health.check', function() {
         });
     });
 
-    it('should fail when too many manipulations', function(done) {
-        var statusMock = sinon.mock(status);
-        statusMock.expects('getStatusInfo').once().returns({
-            manipulations: {
-                currentCount: 1,
-                limit: 1,
-                currentQueueSize: 4
-            },
-            proxyStreams: {
-                currentCount: 0,
-                limit: 10,
-                currentQueueSize: 0
-            }
+    context('too many manipulations', () => {
+        let statusMock, isHealthy, failReason;
+
+        before((done) => {
+            statusMock = sinon.mock(status);
+            statusMock.expects('getStatusInfo').once().returns({
+                manipulations: {
+                    currentCount: 1,
+                    limit: 1,
+                    currentQueueSize: 4
+                },
+                proxyStreams: {
+                    currentCount: 0,
+                    limit: 10,
+                    currentQueueSize: 0
+                }
+            });
+
+            health.check((_isHealthy, _failReason) => {
+                isHealthy = _isHealthy;
+                failReason = _failReason;
+                done();
+            });
         });
-        health.check(function(isHealthy, failReason) {
+
+        after(() => {
             statusMock.restore();
+        });
+
+        it('should fail', () => {
             statusMock.verify();
             assert.equal(isHealthy, false);
             assert.equal(failReason, 'Overloaded. Too many concurrent manipulations.');
-            done();
         });
     });
 

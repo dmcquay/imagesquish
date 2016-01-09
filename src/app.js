@@ -2,7 +2,8 @@ if (process.env['NEW_RELIC_ENABLED']) {
     require('newrelic');
 }
 
-var config = require('./config');
+import config from './config';
+
 var express = require('express');
 var routes = require('./routes');
 var http = require('http');

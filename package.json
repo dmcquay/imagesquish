@@ -6,6 +6,8 @@
   },
   "dependencies": {
     "aws-sdk": "1.9.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "6.4.0",
+    "babel-register": "6.3.13",
     "bluebird": "^2.9.34",
     "deep-equal": "^1.0.1",
     "express": "4.11.2",
@@ -27,6 +29,7 @@
     "url": "https://github.com/dmcquay/imagesquish"
   },
   "scripts": {
+    "start": "node ./src/app.register.js",
     "test": "LOG_LEVEL=none mocha ./src/**/*.specs.js"
   }
 }

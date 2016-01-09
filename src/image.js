@@ -1,6 +1,8 @@
+"use strict";
+
 var activeManipulations = require('./manipulations-status').activeManipulations;
 var concurrency = require('./concurrency');
-var config = require('./config');
+import config from './config';
 var customOperations = require('./operations');
 var gm = require('gm');
 var http = require('http');
@@ -27,7 +29,7 @@ var parseOTFSteps = exports.parseOTFSteps = function(manipulation) {
 
 exports.manipulate = function(img, manipulation, bucket) {
     log.debug('beginning local manipulation');
-    var steps;
+    let steps, step;
     if (manipulation.indexOf('otf') === 0) {
         steps = parseOTFSteps(manipulation);
     } else {

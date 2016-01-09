@@ -1,8 +1,8 @@
-FROM node:0.12.9
+FROM node:5.3.0
 
 MAINTAINER Dustin McQuay <dmcquay@gmail.com>
 
-COPY . /data
+COPY . /app
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -q -y \
@@ -11,11 +11,11 @@ RUN apt-get update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/{apt,dpkg,cache,log} && \
     rm -rf /var/lib/apt/lists/* && \
-    cd /data && \
+    cd /app && \
     npm install .
 
 EXPOSE 3000
 
-WORKDIR /data
+WORKDIR /app
 
 CMD ["node", "app.js"]

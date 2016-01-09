@@ -1,13 +1,14 @@
+"use strict";
+
 var assert = require('assert');
 var http = require('http');
 var sinon = require('sinon');
 
 var activeManipulations = require('./manipulations-status').activeManipulations;
 var concurrency = require('./concurrency');
-var config = require('./config');
+import config from './config';
 var image = require('./image');
 var storage = require('./storage');
-
 
 describe('image.doManipulation', function() {
     beforeEach(function() {

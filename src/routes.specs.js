@@ -1,7 +1,7 @@
 var assert = require('assert');
 var sinon = require('sinon');
 
-var config = require('./config');
+import config from './config';
 var proxy = require('./proxy');
 var routes = require('./routes');
 var storage = require('./storage');

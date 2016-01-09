@@ -1,3 +1,5 @@
+"use strict";
+
 var assert = require('assert');
 var http = require('http');
 var sinon = require('sinon');
@@ -23,6 +25,7 @@ describe('proxy.proxyRequest', function() {
         });
 
         httpMock.verify();
+        httpMock.restore();
         assert.equal(0, concurrency.proxyStreamsSemaphore.current);
     });
 });

@@ -1,4 +1,4 @@
-var config = require('./config');
+import config from './config';
 var newrelic = require('newrelic');
 var health = require('./health');
 var image = require('./image');

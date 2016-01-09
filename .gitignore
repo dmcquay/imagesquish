@@ -2,3 +2,4 @@ node_modules/*
 .idea/*
 src/config/config.json
 src/config/aws.json
+newrelic_agent.log

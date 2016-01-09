@@ -1,4 +1,4 @@
-var config = require('./config');
+import config from './config';
 
 var DEFAULT_MANIPULATION_KEY_FORMAT = 'imagesquish/{bucket}/{manipulation}/{imgId}';
 var DEFAULT_ORIGINAL_KEY_FORMAT = '{bucket}/originals/{imgId}'; // used for upload only

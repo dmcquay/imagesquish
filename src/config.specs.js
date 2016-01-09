@@ -1,6 +1,13 @@
+"use strict";
+
 var assert = require('assert');
 
-var config = require('./config');
+import config from './config';
+
+before(() => {
+    // in case tests are run long enough to reload, we don't want to
+    config.disableReload();
+});
 
 describe('config', function() {
     it('buckets can inherit', function() {

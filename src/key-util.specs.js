@@ -1,6 +1,6 @@
 var assert = require('assert');
 
-var config = require('./config');
+import config from './config';
 var keyUtil = require('./key-util');
 
 describe('generateKey', function() {
