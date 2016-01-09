@@ -7,7 +7,7 @@ var sinon = require('sinon');
 var activeManipulations = require('./manipulations-status').activeManipulations;
 var concurrency = require('./concurrency');
 import config from './config';
-var image = require('./image');
+import * as image from './image';
 var storage = require('./storage');
 
 describe('image.doManipulation', function() {
@@ -39,7 +39,7 @@ describe('image.doManipulation', function() {
         };
         httpMock.expects('request').once().returns(fakeReq);
         var manipulateImageStub = sinon.stub(image, 'manipulate').returns(null);
-        var uploadImageStub = sinon.stub(image, 'uploadImage').callsArg(4);
+        var uploadImageStub = sinon.stub(image, 'oldUploadImage').callsArg(4);
         image.doManipulation('mybucket', 'test.jpg', 'small', function(err) {
             assert.strictEqual(typeof(err), 'undefined');
             httpMock.verify();
@@ -85,7 +85,7 @@ describe('image.doManipulation', function() {
         };
         var httpStub = sinon.stub(http, 'request').returns(fakeReq);
         var imageMock = sinon.mock(image);
-        imageMock.expects('uploadImage').once().callsArgWith(4, {name:'SomeError'});
+        imageMock.expects('oldUploadImage').once().callsArgWith(4, {name:'SomeError'});
         image.doManipulation('mybucket', 'test.jpg', 'small', function(err) {
             assert.equal(err.name, 'SomeError');
             assert.equal(concurrency.manipulationsSemaphore.current, 0);
@@ -114,7 +114,7 @@ describe('image.doManipulation', function() {
         var httpStub = sinon.stub(http, 'request').returns(fakeReq);
         var imageMock = sinon.mock(image);
         imageMock.expects('manipulate').once().throws(Error('NoSuchOperation'));
-        imageMock.expects('uploadImage').atMost(0);
+        imageMock.expects('oldUploadImage').atMost(0);
         image.doManipulation('mybucket', 'test.jpg', 'small', function(err) {
             assert.equal(err.name, 'NoSuchOperation');
             assert.equal(concurrency.manipulationsSemaphore.current, 0);
@@ -128,40 +128,70 @@ describe('image.doManipulation', function() {
 });
 
 describe('image.uploadImage', function() {
-    it('calls storage.upload with correct params and passes error', function(done) {
-        var img = {
-            toBuffer: function(cb) {
-                cb(undefined, 'fakebuffer');
-            }
+    let buffer = 'fakebuffer';
+    let bucket = 'testbucket';
+    let key = 'testkey';
+    let contentType = 'image/jpeg';
+
+    context('happy path', () => {
+        let storageMock;
+
+        let img = {
+            toBuffer: sinon.stub().callsArgWith(0, undefined, buffer)
         };
-        var storageMock = sinon.mock(storage);
-        storageMock.expects('upload').withArgs({
-            bucket: 'fakebucket',
-            data: 'fakebuffer',
-            contentType: 'image/jpeg',
-            key: 'fakekey'
-        }).callsArgWith(1, 'ExampleError');
-        image.uploadImage(img, 'fakebucket', 'fakekey', 'image/jpeg', function(err) {
-            assert.equal(err, 'ExampleError');
-            storageMock.verify();
+
+        before(async () => {
+            storageMock = sinon.mock(storage, 'upload');
+            storageMock.expects('upload').once().withArgs({
+                bucket,
+                data: buffer,
+                contentType,
+                key
+            }).callsArg(1);
+            await image.uploadImage(img, bucket, key, contentType);
+        });
+
+        after(() => {
             storageMock.restore();
-            done();
+        });
+
+        it('calls toBuffer on the image', () => {
+            expect(img.toBuffer.called).to.be.true;
+        });
+
+        it('calls storage.upload with the correct params', () => {
+            storageMock.verify();
         });
     });
 
-    it('calls callback with err if toBuffer has error and does not call storage.upload', function(done) {
-        var img = {
-            toBuffer: function(cb) {
-                cb('ErrorFromToBuffer');
-            }
+    context('when there is an error converting the image to buffer', () => {
+        let thrownError = new Error("HorribleError");
+        let img = {
+            toBuffer: sinon.stub().callsArgWith(0, thrownError)
         };
-        var storageMock = sinon.mock(storage);
-        storageMock.expects('upload').never();
-        image.uploadImage(img, 'fakebucket', 'fakekey', 'image/jpeg', function(err) {
-            assert.equal(err, 'ErrorFromToBuffer');
-            storageMock.verify();
-            storageMock.restore();
-            done();
+
+        it('throws the error', () => {
+            return expect(image.uploadImage(img, bucket, key, contentType)).to.eventually.be.rejectedWith(thrownError);
+        })
+    });
+
+    context('when there is an error uploading the file to s3', () => {
+        let thrownError = new Error("HorribleError");
+        let img = {
+            toBuffer: sinon.stub().callsArgWith(0, undefined, buffer)
+        };
+
+        before(async () => {
+            sinon.stub(storage, 'upload').callsArgWith(1, thrownError);
+        });
+
+        after(() => {
+            storage.upload.restore();
+        });
+
+        it('throws the error', () => {
+            return expect(image.uploadImage(img, bucket, key, contentType))
+                .to.eventually.be.rejectedWith(thrownError);
         })
     });
 });

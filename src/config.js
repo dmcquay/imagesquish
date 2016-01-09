@@ -144,7 +144,6 @@ export class Config extends events.EventEmitter {
                 var konphyg = require('konphyg')(__dirname + '/config');
                 resolve(konphyg('config'));
             } catch (err) {
-                console.error('second: ', this);
                 if (!self._warnedAboutMissingConfig) {
                     self._warnedAboutMissingConfig = true;
                     log.error("Failed to load config from local file. Falling back to defaults.");

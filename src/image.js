@@ -10,12 +10,12 @@ var keyUtil = require('./key-util');
 var log = require('./log');
 var storage = require('./storage');
 
-var parseOTFSteps = exports.parseOTFSteps = function(manipulation) {
-    var operations = manipulation.split(':'),
-        i, steps = [], parts;
+export function parseOTFSteps(manipulation) {
+    let operations = manipulation.split(':'),
+        steps = [], parts;
     operations = operations.slice(1);
-    for (i=0; i<operations.length; i++) {
-        parts = operations[i].split(/[(),]/);
+    for (let operation of operations) {
+        parts = operation.split(/[(),]/);
         while (parts[parts.length-1] === "") {
             parts.pop();
         }
@@ -25,9 +25,9 @@ var parseOTFSteps = exports.parseOTFSteps = function(manipulation) {
         });
     }
     return steps;
-};
+}
 
-exports.manipulate = function(img, manipulation, bucket) {
+export function manipulate(img, manipulation, bucket) {
     log.debug('beginning local manipulation');
     let steps, step;
     if (manipulation.indexOf('otf') === 0) {
@@ -36,9 +36,8 @@ exports.manipulate = function(img, manipulation, bucket) {
         steps = config.get('buckets')[bucket].manipulations[manipulation];
     }
     log.debug('prepared steps');
-    for (var i = 0; i < steps.length; i++) {
-        log.debug('performing step: ' + i);
-        step = steps[i];
+    steps.forEach((step, idx) => {
+        log.debug('performing step: ' + idx);
         if (customOperations[step.operation]) {
             customOperations[step.operation].apply(img, step.params);
         } else if (img[step.operation]) {
@@ -46,35 +45,42 @@ exports.manipulate = function(img, manipulation, bucket) {
         } else {
             throw Error('NoSuchOperation');
         }
-        log.debug('DONE performing step: ' + i);
-    }
+        log.debug('DONE performing step: ' + idx);
+    });
     log.debug('done with all manipulation steps');
     return img;
-};
+}
 
-exports.uploadImage = function(img, s3Bucket, s3Key, contentType, cb) {
-    log.debug('starting uploadImage function');
-    img.toBuffer(function(err, buffer) {
-        log.debug('image converted to buffer');
-        if (err) {
-            log.error('error converting image to buffer');
-            return cb(err);
-        }
-        var uploadParams = {
-            bucket: s3Bucket,
-            data: buffer,
-            contentType: contentType,
-            key: s3Key
-        };
-        log.debug('uploading to s3');
-        storage.upload(uploadParams, function(err) {
-            log.debug('finished upload, or error');
-            cb(err);
+export function uploadImage(img, s3Bucket, s3Key, contentType) {
+    return new Promise(function(resolve, reject) {
+        log.debug('starting uploadImage function');
+        img.toBuffer(function(err, buffer) {
+            log.debug('image converted to buffer');
+            if (err) {
+                log.error('error converting image to buffer');
+                reject(err);
+            }
+            let uploadParams = {
+                bucket: s3Bucket,
+                data: buffer,
+                contentType: contentType,
+                key: s3Key
+            };
+            log.debug('uploading to s3');
+            storage.upload(uploadParams, function(err) {
+                log.debug('finished upload, or error');
+                err ? reject(err) : resolve();
+            });
         });
     });
-};
+}
 
-exports.doManipulation = function(bucket, imgId, manipulation, cb) {
+// temporary for backwards compatibility
+export function oldUploadImage(img, s3Bucket, s3Key, contentType, cb) {
+    uploadImage(img, s3Bucket, s3Key, contentType).then(cb).catch(cb);
+}
+
+export function doManipulation(bucket, imgId, manipulation, cb) {
     log.debug('beginning manipulation');
     var buckets = config.get('buckets');
     var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
@@ -140,9 +146,9 @@ exports.doManipulation = function(bucket, imgId, manipulation, cb) {
                 return done({name:err.message});
             }
             log.debug('finished local image manipulation. uploading.');
-            exports.uploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type'], done);
+            exports.oldUploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type'], done);
         });
 
         req.end();
     });
-};
+}
