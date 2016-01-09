@@ -2,7 +2,7 @@
 
 var assert = require('assert');
 
-import config from './config';
+import config, {Config} from './config';
 
 before(() => {
     // in case tests are run long enough to reload, we don't want to
@@ -33,7 +33,7 @@ describe('config', function() {
                 "allowOTFManipulations": false
             }
         };
-        config._populateInheritedBuckets(buckets);
+        Config._populateInheritedBuckets(buckets);
         assert.equal(buckets.dev.allowOTFManipulations, false);
         assert.equal(buckets.dev.originHost, 'example.com');
         assert.deepEqual(buckets.dev.manipulations.brand, buckets.main.manipulations.brand);

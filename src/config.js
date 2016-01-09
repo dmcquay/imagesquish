@@ -1,21 +1,22 @@
 'use strict';
 
-var log = require('./log'),
-    deepEqual = require('deep-equal'),
-    Etcd = require('node-etcd'),
-    events = require('events'),
-    Promise = require('bluebird'),
-    util = require('util'),
-    _ = require('underscore');
+var deepEqual = require('deep-equal');
+var Etcd = require('node-etcd');
+var events = require('events');
+var util = require('util');
+var _ = require('underscore');
 
-var SOURCE_ETCD = 'etcd',
-    SOURCE_ENV = 'env',
-    SOURCE_S3 = 's3',
-    etcdHost = process.env['ETCD_HOST'] || '127.0.0.1',
-    etcdPort = process.env['ETCD_PORT'] || '4001',
-    etcdRoot = process.env['ETCD_ROOT'] || 'imagesquish';
+var log = require('./log');
 
-class Config extends events.EventEmitter {
+const SOURCE_ETCD = 'etcd';
+const SOURCE_ENV = 'env';
+const SOURCE_S3 = 's3';
+
+const etcdHost = process.env['ETCD_HOST'] || '127.0.0.1';
+const etcdPort = process.env['ETCD_PORT'] || '4001';
+const etcdRoot = process.env['ETCD_ROOT'] || 'imagesquish';
+
+export class Config extends events.EventEmitter {
     constructor(source) {
         super();
         this.source = source;
@@ -73,7 +74,7 @@ class Config extends events.EventEmitter {
                 config = await this._loadFromLocalFile();
             }
 
-            this._populateInheritedBuckets(config.buckets);
+            Config._populateInheritedBuckets(config.buckets);
             if (!deepEqual(config, this.config)) {
                 log.info("config changed. \nold: ", JSON.stringify(this.config), "\n new: ", JSON.stringify(config));
                 this.config = config;
@@ -95,17 +96,13 @@ class Config extends events.EventEmitter {
     }
 
     async _loadFromEtcd(cb) {
-        return new Promise(function(resolve, reject) {
+        return new Promise((resolve, reject) => {
             var etcd = new Etcd(etcdHost, etcdPort);
-            etcd.get(etcdRoot, {recursive: true}, function (err, result) {
+            etcd.get(etcdRoot, {recursive: true}, (err, result) => {
                 if (err) {
                     reject(err);
-
                 } else {
-                    config = JSON.parse(result.node.value);
-                    populateInheritedBuckets(config.buckets);
-                    loadedEvent.trigger();
-                    log.info('Loaded configuration parameters from etcd.');
+                    resolve(JSON.parse(result.node.value));
                 }
             });
         });
@@ -147,6 +144,7 @@ class Config extends events.EventEmitter {
                 var konphyg = require('konphyg')(__dirname + '/config');
                 resolve(konphyg('config'));
             } catch (err) {
+                console.error('second: ', this);
                 if (!self._warnedAboutMissingConfig) {
                     self._warnedAboutMissingConfig = true;
                     log.error("Failed to load config from local file. Falling back to defaults.");
@@ -156,25 +154,22 @@ class Config extends events.EventEmitter {
         });
     }
 
-    _populateInheritedBuckets(buckets) {
-        var bucketName;
+    static _populateInheritedBuckets(buckets) {
+        let bucketName;
         for (bucketName in buckets) {
             if (buckets.hasOwnProperty(bucketName)) {
-                var bucket = buckets[bucketName];
-                var key, inherit;
+                let bucket = buckets[bucketName];
                 if (bucket.inheritFrom) {
-                    inherit = buckets[bucket.inheritFrom];
+                    let inherit = buckets[bucket.inheritFrom];
                     if (!inherit) {
                         throw Error('Bucket ' + bucketName + ' tried to inherit from '
                             + bucket.inheritFrom + ' which does not exist.');
                     }
-                    buckets[bucketName] = _.extend({}, inherit, bucket);
+                    buckets[bucketName] = Object.assign({}, inherit, bucket);
                 }
             }
         }
     }
 }
 
-var config = new Config(process.env['CONFIG_SOURCE']);
-
-export default config;
+export default new Config(process.env['CONFIG_SOURCE']);
