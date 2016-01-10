@@ -1,174 +1,99 @@
 'use strict';
 
-var deepEqual = require('deep-equal');
-var Etcd = require('node-etcd');
-var events = require('events');
-var util = require('util');
-var _ = require('underscore');
+import parseDefinition from './parse-definition'
+import dotenv from 'dotenv'
 
-var log = require('./log');
+dotenv.load();
+let env = process.env;
 
-const SOURCE_ETCD = 'etcd';
-const SOURCE_ENV = 'env';
-const SOURCE_S3 = 's3';
-
-const etcdHost = process.env['ETCD_HOST'] || '127.0.0.1';
-const etcdPort = process.env['ETCD_PORT'] || '4001';
-const etcdRoot = process.env['ETCD_ROOT'] || 'imagesquish';
-
-export class Config extends events.EventEmitter {
-    constructor(source) {
-        super();
-        this.source = source;
-        this.config = null;
-        this.initialized = false;
-        this.once('load', () => {
-            this.initialized = true;
-        });
-        this.on('load', () => {
-            log.info('Loaded config from ' + source);
-        });
-        this._load();
-        this._loadIntervalId = setInterval(() => {
-            this._load();
-        }, 5000);
+function parseBool(str, defaultVal) {
+    if (str === undefined) {
+        return defaultVal;
     }
-
-    disableReload() {
-        clearInterval(this._loadIntervalId);
+    let strLower = str.toLowerCase();
+    if (strLower === 'true') {
+        return true;
     }
-
-    get(key) {
-        if (!this.initialized) {
-            log.error('Tried to fetch config value before config finished loading or config failed to load.');
-        }
-        return this.config[key];
+    if (strLower === 'false') {
+        return false;
     }
-
-    /**
-     * Set a config value.
-     * WARNING: This is for unit tests ONLY. Do not actually use.
-     * TODO: Enforce use by unit tests only.
-     *
-     * @param key
-     * @param value
-     */
-    set(key, value) {
-        if (!this.initialized) {
-            log.error('Tried to fetch config value before config finished loading or config failed to load.');
-        }
-        this.config[key] = value;
-    }
-
-    async _load() {
-        let config;
-
-        try {
-            if (this.source === SOURCE_ETCD) {
-                config = await this._loadFromEtcd();
-            } else if (this.source === SOURCE_ENV) {
-                config = await this._loadFromEnv();
-            } else if (this.source === SOURCE_S3) {
-                config = await this._loadFromS3();
-            } else {
-                config = await this._loadFromLocalFile();
-            }
-
-            Config._populateInheritedBuckets(config.buckets);
-            if (!deepEqual(config, this.config)) {
-                log.info("config changed. \nold: ", JSON.stringify(this.config), "\n new: ", JSON.stringify(config));
-                this.config = config;
-                this.emit('load');
-            } else {
-                log.debug('Loaded new config, but it was identical');
-            }
-        } catch(err) {
-            log.error('Failed to read config from ' + this.source + '. Error: ' + util.inspect(err));
-            if (this.initialized) {
-                // if we have already started up, then we want to keep running w/ the old config
-                log.error('Continuing with old config.');
-            } else {
-                // can't start w/out a config
-                log.error('Cannot startup without a config.');
-                throw(err);
-            }
-        }
-    }
-
-    async _loadFromEtcd(cb) {
-        return new Promise((resolve, reject) => {
-            var etcd = new Etcd(etcdHost, etcdPort);
-            etcd.get(etcdRoot, {recursive: true}, (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(JSON.parse(result.node.value));
-                }
-            });
-        });
-    }
-
-    async _loadFromEnv() {
-        return new Promise(function(resolve, reject) {
-            resolve(JSON.parse(process.env['IMAGESQUISH_BUCKETS']));
-        });
-    }
-
-    async _loadFromS3() {
-        return new Promise(function (resolve, reject) {
-            var AWS = require('aws-sdk');
-            var s3 = new AWS.S3();
-            var params = {
-                Bucket: process.env['S3_CONFIG_BUCKET'],
-                Key: process.env['S3_CONFIG_KEY']
-            };
-            s3.getObject(params, function (err, data) {
-                if (err) {
-                    reject(err);
-                } else {
-                    try {
-                        resolve(JSON.parse(data.Body));
-                    } catch(err) {
-                        reject(err)
-                    }
-                }
-            });
-        });
-    }
-
-    async _loadFromLocalFile() {
-        var minimalEmptyConfig = {buckets: {}};
-        var self = this;
-        return new Promise(function(resolve, reject) {
-            try {
-                var konphyg = require('konphyg')(__dirname + '/config');
-                resolve(konphyg('config'));
-            } catch (err) {
-                if (!self._warnedAboutMissingConfig) {
-                    self._warnedAboutMissingConfig = true;
-                    log.error("Failed to load config from local file. Falling back to defaults.");
-                }
-                resolve(minimalEmptyConfig)
-            }
-        });
-    }
-
-    static _populateInheritedBuckets(buckets) {
-        let bucketName;
-        for (bucketName in buckets) {
-            if (buckets.hasOwnProperty(bucketName)) {
-                let bucket = buckets[bucketName];
-                if (bucket.inheritFrom) {
-                    let inherit = buckets[bucket.inheritFrom];
-                    if (!inherit) {
-                        throw Error('Bucket ' + bucketName + ' tried to inherit from '
-                            + bucket.inheritFrom + ' which does not exist.');
-                    }
-                    buckets[bucketName] = Object.assign({}, inherit, bucket);
-                }
-            }
-        }
-    }
+    return !!str;
 }
 
-export default new Config(process.env['CONFIG_SOURCE']);
+/**
+ * Dynamically populates buckets.
+ *
+ * This is a separate, exported function so that we can test it, since
+ * there's quite a bit of logic in here.
+ */
+export function buildBuckets(env) {
+
+    let buckets = {};
+    for (let bucketName of env.BUCKETS.split(',')) {
+        // TODO: snake case instead of just upper?
+        let envPrefix = `BUCKET_${bucketName.toUpperCase()}`;
+        let bucket = {
+            originHost: env[`${envPrefix}_ORIGIN_HOST`],
+            originPathPrefix: env[`${envPrefix}_ORIGIN_PATH_PREFIX`],
+            s3CacheBucket: env[`${envPrefix}_S3_CACHE_BUCKET`],
+            allowAdHoc: parseBool(env[`${envPrefix}_ALLOW_AD_HOC`], false),
+            definitions: {},
+            inheritFrom: env[`${envPrefix}_INHERIT_FROM`]
+        };
+
+        // unset anything that is undefined so that it can be overridden by inheritFrom
+        let undefinedKeys = Object.keys(bucket).filter(key => bucket[key] === undefined);
+        for (let key of undefinedKeys) {
+            delete bucket[key];
+        }
+
+        let defEnvKeyPrefix = `${envPrefix}_DEF_`;
+        let defEnvKeys = Object.keys(env).filter(key => key.startsWith(defEnvKeyPrefix));
+
+        for (let defEnvKey of defEnvKeys) {
+            // TODO: camelCase instead of toLowerCase?
+            let defName = defEnvKey.substr(defEnvKeyPrefix.length).toLowerCase();
+            bucket.definitions[defName] = parseDefinition(env[defEnvKey]);
+        }
+
+        buckets[bucketName] = bucket;
+    }
+
+    // populate inherited buckets
+    for (let bucketName in buckets) {
+        if (buckets.hasOwnProperty(bucketName)) {
+            let bucket = buckets[bucketName];
+            let inherit;
+            if (bucket.inheritFrom) {
+                inherit = buckets[bucket.inheritFrom];
+                if (!inherit) {
+                    throw Error('Bucket ' + bucketName + ' tried to inherit from '
+                        + bucket.inheritFrom + ' which does not exist.');
+                }
+                buckets[bucketName].definitions = Object.assign(
+                    {}, inherit.definitions, bucket.definitions);
+                buckets[bucketName] = Object.assign({}, inherit, bucket);
+            }
+        }
+    }
+
+    return buckets;
+}
+
+export default {
+    aws: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY
+    },
+    buckets: buildBuckets(env),
+    port: env.PORT,
+    maxConcurrentProxyStreams: env.MAX_CONCURRENT_PROXY_STREAMS,
+    maxConcurrentManipulations: env.MAX_CONCURRENT_MANIPULATIONS,
+    logLevel: env.LOG_LEVEL,
+    newRelic: {
+        enabled: parseBool(env.NEWRELIC_ENABLED, false),
+        licenseKey: env.NEWRELIC_LICENSE_KEY,
+        logLevel:env. NEWRELIC_LOG_LEVEL,
+        appName: env.NEWRELIC_APP_NAME
+    }
+};

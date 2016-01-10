@@ -1,42 +1,66 @@
 "use strict";
 
-var assert = require('assert');
+import assert from 'assert'
+import {buildBuckets} from './config'
 
-import config, {Config} from './config';
+describe.only('config', function() {
+    it('fully populated config with inheritance', function() {
+        var testEnv = {
+            AWS_ACCESS_KEY_ID: 'myaccesskeyid',
+            AWS_SECRET_ACCESS_KEY: 'mysecret',
+            LOG_LEVEL: 'info',
+            PORT: '3000',
+            MAX_CONCURRENT_PROXY_STREAMS: '20',
+            MAX_CONCURRENT_MANIPULATIONS: '2',
 
-before(() => {
-    // in case tests are run long enough to reload, we don't want to
-    config.disableReload();
-});
+            NEWRELIC_ENABLED: 'true',
+            NEWRELIC_LICENSE_KEY: 'mynrlicensekey',
+            NEWRELIC_LOG_LEVEL: 'info',
+            NEWRELIC_APP_NAME: 'mynrapp',
 
-describe('config', function() {
-    it('buckets can inherit', function() {
-        var buckets = {
-            "main": {
-                "originHost": "example.com",
-                "manipulationsS3Bucket": "com-example-manipulations",
-                "allowOTFManipulations": true,
-                "manipulations": {
-                    "brand": [
-                        { "operation": "quality", "params": [90] }
-                    ],
-                    "landing_banner": [
-                        { "operation": "resize", "params": [800, null] },
-                        { "operation": "crop", "params": [800, 320] },
-                        { "operation": "quality", "params": [90] }
-                    ]
+            BUCKETS: 'sample,other',
+
+            BUCKET_SAMPLE_ORIGIN_HOST: 's3.amazonaws.com',
+            BUCKET_SAMPLE_ORIGIN_PATH_PREFIX: 'com-example-images/',
+            BUCKET_SAMPLE_S3_CACHE_BUCKET: 'com-example-image-manipulations',
+            BUCKET_SAMPLE_ALLOW_AD_HOC: 'true',
+            BUCKET_SAMPLE_DEF_SMALL: 'resize(100)',
+            BUCKET_SAMPLE_DEF_624x410: 'crop(624,410)',
+
+            BUCKET_OTHER_INHERIT_FROM: 'sample',
+            BUCKET_OTHER_DEF_624x410: 'crop(624,410):qualtiy(90)',
+            BUCKET_OTHER_DEF_TINY: 'resize(10,10)'
+        };
+
+        let expected = {
+            "sample": {
+                "originHost": "s3.amazonaws.com",
+                "originPathPrefix": "com-example-images/",
+                "s3CacheBucket": "com-example-image-manipulations",
+                "allowAdHoc": true,
+                "definitions": {
+                    "small": [{"operation": "resize", "params": ["100"]}],
+                    "624x410": [{"operation": "crop", "params": ["624", "410"]}]
                 }
             },
-            "dev": {
-                "inheritFrom": "main",
-                "manipulationsS3Bucket": "com-example-manipulations-dev",
-                "allowOTFManipulations": false
+            "other": {
+                "s3CacheBucket": "com-example-image-manipulations",
+                "definitions": {
+                    "small": [{"operation": "resize", "params": ["100"]}],
+                    "624x410": [
+                        {"operation": "crop", "params": ["624", "410"]},
+                        {"operation": "qualtiy", "params": ["90"]}
+                    ],
+                    "tiny": [{"operation": "resize", "params": ["10", "10"]}]
+                },
+                "allowAdHoc": false,
+                "originPathPrefix": "com-example-images/",
+                "originHost": "s3.amazonaws.com",
+                "inheritFrom": "sample"
             }
         };
-        Config._populateInheritedBuckets(buckets);
-        assert.equal(buckets.dev.allowOTFManipulations, false);
-        assert.equal(buckets.dev.originHost, 'example.com');
-        assert.deepEqual(buckets.dev.manipulations.brand, buckets.main.manipulations.brand);
-        assert.equal(buckets.dev.manipulations.brand[0].operation, 'quality');
+        let actual = buildBuckets(testEnv);
+
+        expect(actual).to.eql(expected);
     });
 });

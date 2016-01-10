@@ -1,6 +1,6 @@
 {
   "name": "imagesquish",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "engines": {
     "node": "5.3.0"
   },
@@ -12,6 +12,7 @@
     "babel-register": "6.3.13",
     "bluebird": "^2.9.34",
     "deep-equal": "^1.0.1",
+    "dotenv": "1.2.0",
     "express": "4.11.2",
     "forever": "0.13.0",
     "gm": "1.13.3",
