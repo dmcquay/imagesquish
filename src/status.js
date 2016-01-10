@@ -10,8 +10,8 @@ var manipulationsQueueSizes = [],
 
 // Keep track of the queue sizes over time so it can be reported.
 setInterval(function() {
-    manipulationsQueueSizes.push(concurrency.manipulationsSemaphore.queue.length);
-    streamQueueSizes.push(concurrency.proxyStreamsSemaphore.queue.length);
+    manipulationsQueueSizes.push(concurrency.manipulationsSemaphore.getQueueLength());
+    streamQueueSizes.push(concurrency.proxyStreamsSemaphore.getQueueLength());
     if (manipulationsQueueSizes.length > queueSizesMaxLength) {
         manipulationsQueueSizes.shift();
     }
