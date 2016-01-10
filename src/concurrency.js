@@ -1,10 +1,33 @@
+"use strict";
+
 var os = require('os');
 var semaphore = require('semaphore');
 var log = require('./log');
 
+class PromiseSemaphore {
+    constructor(capacity) {
+        this.semaphore = semaphore(capacity)
+    }
+
+    take() {
+        return new Promise(function(resolve) {
+            this.semaphore.take(() => {
+                resolve();
+            });
+        });
+    }
+
+    leave() {
+        this.semaphore.leave();
+    }
+
+    getQueueLength() {
+        return this.semaphore.queue.length;
+    }
+}
 
 var maxConcurrentProxyStreams = process.env['MAX_CONCURRENT_PROXY_STREAMS'] || 20;
-var proxyStreamsSemaphore = semaphore(maxConcurrentProxyStreams);
+var proxyStreamsSemaphore = new PromiseSemaphore(maxConcurrentProxyStreams);
 log.info("Maximum concurrent proxy streams: " + maxConcurrentProxyStreams);
 
 
@@ -15,7 +38,7 @@ var maxConcurrentManipulations = process.env['MAX_CONCURRENT_MANIPULATIONS'];
 if (typeof(maxConcurrentManipulations) === 'undefined') {
     maxConcurrentManipulations = os.cpus().length;
 }
-var manipulationsSemaphore = semaphore(maxConcurrentManipulations);
+var manipulationsSemaphore = new PromiseSemaphore(maxConcurrentManipulations);
 log.info('Maximum concurrent manipulations: ' + maxConcurrentManipulations);
 
 
