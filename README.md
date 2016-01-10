@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/dmcquay/imagesquish.png)](https://travis-ci.org/dmcquay/imagesquish)
+[![Build Status](https://travis-ci.org/dmcquay/imagesquish.svg?branch=master)](https://travis-ci.org/dmcquay/imagesquish)
 
 # WHAT IS IMAGESQUISH?
 
