@@ -1,6 +1,6 @@
 "use strict";
 
-var activeManipulations = require('./manipulations-status').activeManipulations;
+import activeManipulations from './manipulations-status'
 var concurrency = require('./concurrency');
 import config from './config';
 var customOperations = require('./operations');
@@ -8,30 +8,14 @@ var gm = require('gm');
 var http = require('http');
 var keyUtil = require('./key-util');
 var log = require('./log');
+import parseDefinition from './parse-definition'
 var storage = require('./storage');
-
-export function parseOTFSteps(manipulation) {
-    let operations = manipulation.split(':'),
-        steps = [], parts;
-    operations = operations.slice(1);
-    for (let operation of operations) {
-        parts = operation.split(/[(),]/);
-        while (parts[parts.length-1] === "") {
-            parts.pop();
-        }
-        steps.push({
-            "operation": parts.shift(),
-            "params": parts
-        });
-    }
-    return steps;
-}
 
 export function manipulate(img, manipulation, bucket) {
     log.debug('beginning local manipulation');
     let steps, step;
     if (manipulation.indexOf('otf') === 0) {
-        steps = parseOTFSteps(manipulation);
+        steps = parseDefinition(manipulation);
     } else {
         steps = config.get('buckets')[bucket].manipulations[manipulation];
     }
@@ -80,7 +64,24 @@ export function oldUploadImage(img, s3Bucket, s3Key, contentType, cb) {
     uploadImage(img, s3Bucket, s3Key, contentType).then(cb).catch(cb);
 }
 
-export function doManipulation(bucket, imgId, manipulation, cb) {
+/**
+ * Makes sure that the given manipulation has been performed and then returns.
+ * It is assumed that this manipulation was not already completed when calling this function.
+ *
+ * 1. Collect/calculate parameters.
+ * 2. Check if this manipulation is already in progress. If it is, wait and then return.
+ * 3. Queue the manipulation (for some other request that could hit step 2)
+ * 4. Wait for our turn to do the manipulation (server can only do X at a time).
+ * 5. Update the status to note that we started
+ * 6. Fetch the original image data
+ * 7. Load the image data into memory and define the manipulations (performed lazily later)
+ * 8. Upload the image (async, manipulations performed lazily as the img buffer is read for uploading)
+ *
+ * @param bucket
+ * @param imgId
+ * @param manipulation
+ */
+export async function doManipulation(bucket, imgId, manipulation) {
     log.debug('beginning manipulation');
     var buckets = config.get('buckets');
     var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
@@ -88,67 +89,105 @@ export function doManipulation(bucket, imgId, manipulation, cb) {
 
     var srcHost = buckets[bucket].originHost;
     var srcPath = '/' + (buckets[bucket].originPathPrefix || '') + imgId;
-
     if (activeManipulations.isActive(s3DestKey)) {
-        activeManipulations.wait(s3DestKey, function(err) {
-            cb(err, true);
-        });
+        // TODO: add this once tested
+        //await activeManipulations.wait(s3DestKey);
         return;
     }
 
     activeManipulations.queue(s3DestKey);
-    concurrency.manipulationsSemaphore.take(function() {
-        var leftSem = false;
-        var leaveSem = function() {
-            if (!leftSem) {
-                leftSem = true;
-                concurrency.manipulationsSemaphore.leave();
-            }
-        };
+    await concurrency.manipulationsSemaphore.take();
 
-        // ensure we always leave the semaphore with a 30 second timeout
-        setTimeout(leaveSem, 30000);
+    var leftSem = false;
+    var leaveSem = function() {
+        if (!leftSem) {
+            leftSem = true;
+            concurrency.manipulationsSemaphore.leave();
+        }
+    };
 
-        activeManipulations.start(s3DestKey);
-        log.debug('successfully took semaphore ' + s3DestKey);
+    //// ensure we always leave the semaphore with a 30 second timeout
+    //setTimeout(leaveSem, 30000);
+    // i had a 30 second time out where i left the semaphore
+    // but it seems like i should do the whole done() step instead
+    // is that safe?
 
-        var alreadyDone = false;
-        var done = function(err) {
-            if (alreadyDone) {
-                log.log('error', 'Reported a single manipulation as done more than once. This should never happen.');
-                return;
-            }
-            activeManipulations.finish(s3DestKey, err);
-            leaveSem();
-            cb(err);
-            alreadyDone = true;
-        };
+    activeManipulations.start(s3DestKey);
+    log.debug('successfully took semaphore ' + s3DestKey);
 
-        var req = http.request({
-            host: srcHost,
-            method: 'GET',
-            path: srcPath
-        });
+    var alreadyDone = false;
+    var done = function(err) {
+        if (alreadyDone) {
+            log.log('error', 'Reported a single manipulation as done more than once. This should never happen.');
+            return;
+        }
+        activeManipulations.finish(s3DestKey, err);
+        leaveSem();
+        alreadyDone = true;
+    };
 
+
+
+    try {
+        let data = await fetchOriginal(srcHost, srcPath);
+        let img = gm(data);
+        img = exports.manipulate(img, manipulation, bucket);
+        await exports.uploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type']);
+        done();
+    } catch(err) {
+        // TODO: if the manipulation step triggers an error, we need to transform the error
+        // like this: `err = {name:err.message}`
+        done(err);
+    }
+
+
+
+    //
+    //var req = http.request({
+    //    host: srcHost,
+    //    method: 'GET',
+    //    path: srcPath
+    //});
+    //
+    //req.on('response', function(res){
+    //    if (res.statusCode != 200) {
+    //        return done({
+    //            name: 'ImageDoesNotExistAtOrigin',
+    //            url: 'http://' + srcHost + srcPath
+    //        });
+    //    }
+    //    log.debug('fetched original');
+    //
+    //    var img = gm(res);
+    //    try {
+    //        img = exports.manipulate(img, manipulation, bucket);
+    //    } catch (err) {
+    //        return done({name:err.message});
+    //    }
+    //    log.debug('finished local image manipulation. uploading.');
+    //    exports.oldUploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type'], done);
+    //});
+    //
+    //req.end();
+}
+
+async function fetchOriginal(host, path) {
+    var req = http.request({
+        method: 'GET',
+        host,
+        path
+    });
+
+    return new Promise(function(resolve, reject) {
         req.on('response', function(res){
             if (res.statusCode != 200) {
-                return done({
+                reject({
                     name: 'ImageDoesNotExistAtOrigin',
                     url: 'http://' + srcHost + srcPath
                 });
             }
             log.debug('fetched original');
-
-            var img = gm(res);
-            try {
-                img = exports.manipulate(img, manipulation, bucket);
-            } catch (err) {
-                return done({name:err.message});
-            }
-            log.debug('finished local image manipulation. uploading.');
-            exports.oldUploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type'], done);
+            resolve(res);
         });
-
-        req.end();
     });
 }
