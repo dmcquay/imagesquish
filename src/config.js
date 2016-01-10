@@ -3,7 +3,9 @@
 import parseDefinition from './parse-definition'
 import dotenv from 'dotenv'
 
-dotenv.load();
+dotenv.load({
+    silent: true
+});
 let env = process.env;
 
 function parseBool(str, defaultVal) {
@@ -27,8 +29,12 @@ function parseBool(str, defaultVal) {
  * there's quite a bit of logic in here.
  */
 export function buildBuckets(env) {
-
     let buckets = {};
+
+    if (!env.BUCKETS) {
+        return buckets;
+    }
+
     for (let bucketName of env.BUCKETS.split(',')) {
         // TODO: snake case instead of just upper?
         let envPrefix = `BUCKET_${bucketName.toUpperCase()}`;
