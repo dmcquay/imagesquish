@@ -25,7 +25,7 @@ var DEFAULT_ORIGINAL_KEY_FORMAT = '{bucket}/originals/{imgId}'; // used for uplo
  */
 exports.generateKey = function(bucket, imgId, manipulation) {
     var key,
-        buckets = config.get('buckets');
+        buckets = config.buckets;
     if (manipulation) {
         key = buckets[bucket].manipulationKeyFormat
             || DEFAULT_MANIPULATION_KEY_FORMAT;

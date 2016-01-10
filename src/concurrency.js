@@ -9,9 +9,10 @@ class PromiseSemaphore {
         this.semaphore = semaphore(capacity)
     }
 
-    take() {
-        return new Promise(function(resolve) {
-            this.semaphore.take(() => {
+    async take() {
+        let self = this;
+        return new Promise(function (resolve) {
+            self.semaphore.take(() => {
                 resolve();
             });
         });
@@ -23,6 +24,10 @@ class PromiseSemaphore {
 
     getQueueLength() {
         return this.semaphore.queue.length;
+    }
+
+    getCurrent() {
+        return this.semaphore.current;
     }
 }
 

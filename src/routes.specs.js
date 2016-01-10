@@ -6,7 +6,7 @@ var proxy = require('./proxy');
 var routes = require('./routes');
 var storage = require('./storage');
 
-describe('get function', function() {
+describe('routes:get', function() {
     it('returns 400 if the bucket does not exist', function() {
         config.buckets = {};
         var req = {
@@ -26,11 +26,11 @@ describe('get function', function() {
     });
 
     it('returns 403 if manipulations is OTF but OTF is not allowed by this bucket', function() {
-        config.set('buckets', {
+        config.buckets = {
             testbucket: {
                 allowOTFManipulations: false
             }
-        });
+        };
         var req = {
             params: [
                 'testbucket',
@@ -48,11 +48,11 @@ describe('get function', function() {
     });
 
     it('returns 404 if the manipulation does not exist in this bucket', function() {
-        config.set('buckets', {
+        config.buckets = {
             testbucket: {
                 manipulations: {}
             }
-        });
+        };
         var req = {
             params: [
                 'testbucket',
@@ -70,12 +70,12 @@ describe('get function', function() {
     });
 
     it('calls proxyRequest with correct host & path when original is requested', function() {
-        config.set('buckets', {
+        config.buckets = {
             testbucket: {
                 originHost: 'www.fakehost.com',
                 originPathPrefix: 'prefix/'
             }
-        });
+        };
         var req = {
             params: [
                 'testbucket',

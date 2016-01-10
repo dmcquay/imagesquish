@@ -1,5 +1,5 @@
 var concurrency = require('./concurrency');
-var activeManipulations = require('./manipulations-status').activeManipulations;
+import activeManipulations from './manipulations-status'
 var _ = require('underscore');
 
 var manipulationsQueueSizes = [],
@@ -41,14 +41,14 @@ exports.getStatusInfo = function() {
         manipulations: {
             currentCount: concurrency.manipulationsSemaphore.current,
             limit: concurrency.manipulationsSemaphore.capacity,
-            currentQueueSize: concurrency.manipulationsSemaphore.queue.length,
+            currentQueueSize: concurrency.manipulationsSemaphore.getQueueLength(),
             averageQueueSizes: getAvgQueueSizes(manipulationsQueueSizes),
             activeManipulations: _.keys(activeManipulations.manipulations)
         },
         proxyStreams: {
             currentCount: concurrency.proxyStreamsSemaphore.current,
             limit: concurrency.proxyStreamsSemaphore.capacity,
-            currentQueueSize: concurrency.proxyStreamsSemaphore.queue.length,
+            currentQueueSize: concurrency.proxyStreamsSemaphore.getQueueLength(),
             averageQueueSizes: getAvgQueueSizes(streamQueueSizes)
         }
     }

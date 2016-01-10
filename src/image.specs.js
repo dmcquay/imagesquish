@@ -16,22 +16,18 @@ describe('image.doManipulation', function() {
     let manipulation = 'small';
     let s3DestKey = 'tests3key';
 
-    //before(function() {
-    //    sinon.stub(config, 'get').returns({
-    //        [bucket]: {
-    //            manipulations: {
-    //                [manipulation]: [{
-    //                    operation: "resize",
-    //                    params: [100, 100]
-    //                }]
-    //            }
-    //        }
-    //    });
-    //});
-    //
-    //after(() => {
-    //    config.get.restore();
-    //});
+    before(function() {
+        config.buckets = {
+            [bucket]: {
+                manipulations: {
+                    [manipulation]: [{
+                        operation: "resize",
+                        params: [100, 100]
+                    }]
+                }
+            }
+        };
+    });
 
     context('happy path, uncached, not active', () => {
         //let httpMock;
@@ -56,7 +52,7 @@ describe('image.doManipulation', function() {
             sinon.stub(keyUtil, 'generateKey').returns(s3DestKey);
             sinon.stub(activeManipulations, 'isActive').returns(false);
             sinon.spy(activeManipulations, 'wait');
-            sinon.stub(activeManipulations, 'queue');
+            sinon.spy(activeManipulations, 'queue');
             sinon.spy(activeManipulations, 'start');
             sinon.stub(concurrency.manipulationsSemaphore, 'take').returns(Promise.resolve());
             //console.log(activeManipulations.isActive());
@@ -283,32 +279,5 @@ describe('image.manipulate', function() {
             image.manipulate(img, 'small', 'mybucket');
         }, 'NoSuchOperation');
 
-    });
-});
-
-describe('parseOTFSteps', function() {
-    it('works for single operation with parameters', function() {
-        assert.deepEqual(image.parseOTFSteps('otf:resize(100,100)'), [
-            {operation: 'resize', params: ["100", "100"]}
-        ]);
-    });
-
-    it('works for single operation with parens but not parameters', function() {
-        assert.deepEqual(image.parseOTFSteps('otf:autoOrient()'), [
-            {operation: 'autoOrient', params: []}
-        ]);
-    });
-
-    it('works for single operation without or parameters', function() {
-        assert.deepEqual(image.parseOTFSteps('otf:autoOrient'), [
-            {operation: 'autoOrient', params: []}
-        ]);
-    });
-
-    it('works for multiple operations', function() {
-        assert.deepEqual(image.parseOTFSteps('otf:autoOrient:resize(100,200)'), [
-            {operation: 'autoOrient', params: []},
-            {operation: 'resize', params: ["100", "200"]}
-        ]);
     });
 });

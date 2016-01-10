@@ -53,11 +53,8 @@ app.use(function(err, req, res, next) {
 });
 
 var server = http.createServer(app);
-log.info('Waiting for config to load...');
-config.once('load', function() {
-    server.listen(app.get('port'), function(){
-        log.info('Express server listening on port ' + app.get('port'));
-    });
+server.listen(app.get('port'), function(){
+    log.info('Express server listening on port ' + app.get('port'));
 });
 
 // Maintain a hash of all connected sockets so we can close them on exit

@@ -3,7 +3,7 @@
 import assert from 'assert'
 import {buildBuckets} from './config'
 
-describe.only('config', function() {
+describe('config', function() {
     it('fully populated config with inheritance', function() {
         var testEnv = {
             AWS_ACCESS_KEY_ID: 'myaccesskeyid',

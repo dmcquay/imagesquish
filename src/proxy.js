@@ -1,25 +1,25 @@
 var concurrency = require('./concurrency');
 var http = require('http');
 
-exports.proxyRequest = function(req, res, host, path, cb) {
-    concurrency.proxyStreamsSemaphore.take(function() {
-        var leftSem = false;
-        var leaveSem = function() {
-            if (!leftSem) {
-                leftSem = true;
-                concurrency.proxyStreamsSemaphore.leave();
-            }
-        };
+exports.proxyRequest = async function(req, res, host, path) {
+    await concurrency.proxyStreamsSemaphore.take();
+    var leftSem = false;
+    var leaveSem = function() {
+        if (!leftSem) {
+            leftSem = true;
+            concurrency.proxyStreamsSemaphore.leave();
+        }
+    };
 
-        // S3 will attempt to use the host header as the bucket name.
-        // Don't do this. By omitting this header, S3 will grab the bucket
-        // name from the first slash-delimited component of the Request-URI
-        // path instead, which is what we want.
-        delete req.headers['host'];
+    // S3 will attempt to use the host header as the bucket name.
+    // Don't do this. By omitting this header, S3 will grab the bucket
+    // name from the first slash-delimited component of the Request-URI
+    // path instead, which is what we want.
+    delete req.headers['host'];
 
-        // in 10 seconds, leave the semaphore no matter what. proxy streaming should never take that long.
-        setTimeout(leaveSem, 10000);
-
+    // in 10 seconds, leave the semaphore no matter what. proxy streaming should never take that long.
+    setTimeout(leaveSem, 10000);
+    return new Promise(function(resolve, reject) {
         try {
             var proxyReq = http.request({
                 host: host,
@@ -33,7 +33,7 @@ exports.proxyRequest = function(req, res, host, path, cb) {
                 if (status != 200 && status != 304 && cb) {
                     proxyReq.abort();
                     leaveSem();
-                    cb('Proxy request returned non 200 response.');
+                    reject('Proxy request returned non 200 response.');
                 } else {
                     proxyRes.on('data', function (chunk) {
                         res.write(chunk, 'binary');
@@ -41,7 +41,7 @@ exports.proxyRequest = function(req, res, host, path, cb) {
                     proxyRes.on('end', function () {
                         res.end();
                         leaveSem();
-                        cb && cb();
+                        resolve();
                     });
                     res.writeHead(proxyRes.statusCode, proxyRes.headers);
                 }

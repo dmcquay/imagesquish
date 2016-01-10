@@ -59,11 +59,6 @@ export function uploadImage(img, s3Bucket, s3Key, contentType) {
     });
 }
 
-// temporary for backwards compatibility
-export function oldUploadImage(img, s3Bucket, s3Key, contentType, cb) {
-    uploadImage(img, s3Bucket, s3Key, contentType).then(cb).catch(cb);
-}
-
 /**
  * Makes sure that the given manipulation has been performed and then returns.
  * It is assumed that this manipulation was not already completed when calling this function.
@@ -83,9 +78,9 @@ export function oldUploadImage(img, s3Bucket, s3Key, contentType, cb) {
  */
 export async function doManipulation(bucket, imgId, manipulation) {
     log.debug('beginning manipulation');
-    var buckets = config.get('buckets');
+    var buckets = config.buckets;
     var s3DestKey = keyUtil.generateKey(bucket, imgId, manipulation);
-    var s3DestBucket = buckets[bucket].manipulationsS3Bucket;
+    var s3DestBucket = buckets[bucket].s3CacheBucket;
 
     var srcHost = buckets[bucket].originHost;
     var srcPath = '/' + (buckets[bucket].originPathPrefix || '') + imgId;
@@ -113,32 +108,30 @@ export async function doManipulation(bucket, imgId, manipulation) {
     // is that safe?
 
     activeManipulations.start(s3DestKey);
-    log.debug('successfully took semaphore ' + s3DestKey);
-
-    var alreadyDone = false;
-    var done = function(err) {
-        if (alreadyDone) {
-            log.log('error', 'Reported a single manipulation as done more than once. This should never happen.');
-            return;
-        }
-        activeManipulations.finish(s3DestKey, err);
-        leaveSem();
-        alreadyDone = true;
-    };
-
-
-
-    try {
-        let data = await fetchOriginal(srcHost, srcPath);
-        let img = gm(data);
-        img = exports.manipulate(img, manipulation, bucket);
-        await exports.uploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type']);
-        done();
-    } catch(err) {
-        // TODO: if the manipulation step triggers an error, we need to transform the error
-        // like this: `err = {name:err.message}`
-        done(err);
-    }
+    //log.debug('successfully took semaphore ' + s3DestKey);
+    //
+    //var alreadyDone = false;
+    //var done = function(err) {
+    //    if (alreadyDone) {
+    //        log.log('error', 'Reported a single manipulation as done more than once. This should never happen.');
+    //        return;
+    //    }
+    //    activeManipulations.finish(s3DestKey, err);
+    //    leaveSem();
+    //    alreadyDone = true;
+    //};
+    //
+    //try {
+    //    let data = await fetchOriginal(srcHost, srcPath);
+    //    let img = gm(data);
+    //    img = exports.manipulate(img, manipulation, bucket);
+    //    await exports.uploadImage(img, s3DestBucket, s3DestKey, res.headers['content-type']);
+    //    done();
+    //} catch(err) {
+    //    // TODO: if the manipulation step triggers an error, we need to transform the error
+    //    // like this: `err = {name:err.message}`
+    //    done(err);
+    //}
 
 
 

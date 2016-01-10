@@ -95,7 +95,7 @@ var get = exports.get = function (req, res) {
 
     var path;
     log.debug('fetching bucket config');
-    var bucketConfig = config.get('buckets')[bucket];
+    var bucketConfig = config.buckets[bucket];
 
     if (!bucketConfig) {
         res.writeHead(400, {'content-type': 'text/plain'});
