@@ -3,3 +3,4 @@ node_modules/*
 src/config/config.json
 src/config/aws.json
 newrelic_agent.log
+.env
