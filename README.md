@@ -13,10 +13,7 @@ ImageSquish is a standalone service that resizes your images on the fly. It is e
  - **IMAGESQUISH_PORT** _(optional)_ - The port ImageSquish will listen on. Default is 3000.
  - **MAX_CONCURRENT_PROXY_STREAMS** _(optional)_ - The maximum number of images that ImageSquish will stream at once. If traffic exceeds this limit, it will be queued up. Default is 20. If your server has excellent I/O performance, I suggest increasing this.
  - **MAX_CONCURRENT_MANIPULATIONS** _(optional)_ - The maximum number of images that will be manipulated (e.g. resized) in parallel. The default is the number of CPUs available. Most of the time it makes sense to leave this alone.
- - **CONFIG_SOURCE** _(optional)_ - Set to "etcd" to provide your bucket configurations via etcd. Probably only interesting if you are using CoreOS.
  - **LOG_LEVEL** _(optional)_ - Set the logging level to debug to get more info or none to avoid any (default is info)
- - **ETCD_HOST** _(optional)_ - Provide a non-standard etcd host (default is 127.0.0.1)
- - **ETCD_PORT** _(optional)_ - Provide a non-standard etcd port (default is 4001)
  - **NEWRELIC_ENABLED** _(optional)_ - Enable NewRelic tracking
  - **NEWRELIC_LICENSE_KEY** _(required if NEWRELIC_ENABLED is 1)
  - **NEWRELIC_LOG_LEVEL** _(optional)_ - Default: info
@@ -32,6 +29,17 @@ The bucket configuration is always provided in JSON format, but can be stored in
  1. Tell ImageSquish via env variables to use etcd for the bucket config (see CONFIG_SOURCE env variable above) and then store this config in the /imagesquish key.
 
 Here is [an example bucket config](https://github.com/dmcquay/imagesquish/blob/master/config/example-config.json).
+
+### Proposal for ENV only bucket configurations
+
+    BUCKETS=flats,other
+    BUCKET_FLATS_ORIGIN_HOST=s3.amazonaws.com
+    BUCKET_FLATS_ORIGIN_PATH_PREFIX=com-example-images/
+    BUCKET_FLATS_MANIPULATIONS_S3_BUCKET=com-example-image-manipulations
+    BUCKET_FLATS_MANIPULATION_KEY_FORMAT=manipulations/{imgId}/{manipulation}
+    BUCKET_FLATS_ALLOW_OTF_MANIPULATIONS=true
+    BUCKET_FLATS_SIZE_SMALL=resize(100)
+    BUCKET_FLATS_SIZE_624x410=crop(624,410)
 
 ##Run Natively
 
@@ -283,7 +291,6 @@ Let us know if you're using it too!
 
 ImageSquish is awesome and is easy to use, but if you get stuck, just submit an issue on GitHub and add the "question" label. I'm happy to help.
 You can also create a question in StackOverflow and use the [imagesquish](http://stackoverflow.com/questions/tagged/imagesquish) tag.
-
 
 # LICENSE
 
