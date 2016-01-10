@@ -1,48 +1,48 @@
 var STATUS_QUEUED = 'queued',
     STATUS_PROCESSING = 'processing';
 
-function ActiveManipulations() {
-    this.manipulations = {};
-}
+export class ActiveManipulations {
+    manipulations = {};
 
-ActiveManipulations.prototype = {
-    queue: function(key) {
+    constructor() {}
+
+    queue(key) {
         this.manipulations[key] = {
             status: STATUS_QUEUED,
             callbacks: []
         }
-    },
+    }
 
-    start: function(key) {
+    start(key) {
         if (typeof(this.manipulations[key]) === 'undefined') {
             throw Error("Must call queue before calling start for a given key");
         }
         this.manipulations[key].status = STATUS_PROCESSING;
-    },
+    }
 
-    finish: function(key, err) {
+    finish(key, err) {
         this.manipulations[key].callbacks.forEach(function(cb) {
             cb(err);
         });
         delete this.manipulations[key];
-    },
+    }
 
-    wait: function(key, cb) {
-        if (typeof(this.manipulations[key]) === 'undefined') {
-            throw Error("Must call queue before calling wait for a given key");
-        }
-        this.manipulations[key].callbacks.push(cb);
-    },
+    async wait(key) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            if (typeof(self.manipulations[key]) === 'undefined') {
+                reject(new Error("Must call queue before calling wait for a given key"));
+            }
+            self.manipulations[key].callbacks.push((err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+    }
 
-    isActive: function(key) {
+    isActive(key) {
         return typeof(this.manipulations[key]) !== 'undefined';
     }
-};
+}
 
-module.exports = {
-    // these are just exposed for testing
-    ActiveManipulations: ActiveManipulations,
-
-    // this is what we really use
-    activeManipulations: new ActiveManipulations()
-};
+export default new ActiveManipulations()

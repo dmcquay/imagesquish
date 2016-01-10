@@ -1,7 +1,7 @@
 var assert = require('assert');
 var sinon = require('sinon');
 
-var ActiveManipulations = require('./manipulations-status').ActiveManipulations;
+import {ActiveManipulations} from './manipulations-status'
 
 describe('ActiveManipulations', function() {
     it('should be initialized with an empty list', function() {
@@ -32,30 +32,26 @@ describe('ActiveManipulations', function() {
         }, /Must call queue before calling start for a given key/);
     });
 
-    it('trying to wait before queue should throw Error', function() {
+    it('trying to wait before queue should throw Error', async () => {
         var manips = new ActiveManipulations();
-        assert.throws(function() {
-            manips.wait('test');
-        }, /Must call queue before calling wait for a given key/);
+        await expect(manips.wait('test')).to.eventually.be.rejectedWith(/Must call queue before calling wait for a given key/);
     });
 
-    it('calling finish twice should call my callback and empty the list', function() {
+    it('calling finish twice should call my callback and empty the list', async () => {
         var manips = new ActiveManipulations();
-        var cb = sinon.spy();
         manips.queue('test');
-        manips.wait('test', cb);
+        let promise = manips.wait('test');
         manips.finish('test');
-        assert(cb.calledOnce);
+        await promise;
         assert.deepEqual(manips.manipulations, []);
     });
 
-    it('error passed to finish should be included in callback arguments', function() {
+    it('error passed to finish should be thrown', async () => {
         var manips = new ActiveManipulations();
-        var cb = sinon.spy();
         manips.queue('test');
-        manips.wait('test', cb);
+        let promise = manips.wait('test');
         manips.finish('test', 'something failed');
-        assert(cb.calledWith('something failed'));
+        await expect(promise).to.eventually.be.rejectedWith(/something failed/);
     });
 
     it('isActive returns false for an inactive key', function() {
